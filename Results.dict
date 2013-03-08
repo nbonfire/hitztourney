@@ -1,5 +1,5 @@
 matchup = [];
-players = ["Nick","John","Safa","Jeff","Magoo","Rosen","Ced","Rob","Adi","Fuckin Callander"];
+players = ["Nick","Ziplox","Safa","Jeff","Magoo","Rosen","Ced","Rob","Adi","James","Bader","Koplow","Sean", "Arambula","Jesse"];
 matchup.append( {"home":[2,10,8],"away":[14,1,5], "winners":[ ]});
 matchup.append( {"home":[15,12,9],"away":[11,3,7], "winners":[ ]});
 matchup.append( {"home":[3,6,9],"away":[15,2,1], "winners":[ ]});
