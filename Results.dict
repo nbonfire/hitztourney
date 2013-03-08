@@ -1,2 +1,3 @@
-matchup = []
+matchup = [];
+players = ["Nick","John","Safa","Jeff","Magoo","Rosen","Ced","Rob","Adi","Fuckin Callander"];
 matchup.append( {"home":[number1,number2,number3],"away":[number4,number5,number6], "winners":[ ]});
