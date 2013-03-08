@@ -1,1 +1,2 @@
-matchup1= {"home":[number1,number2,number3],"away":[number4,number5,number6], "winners":[ ]}
+matchup = []
+matchup.append( {"home":[number1,number2,number3],"away":[number4,number5,number6], "winners":[ ]});
