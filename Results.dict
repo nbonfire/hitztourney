@@ -1,7 +1,7 @@
 matchup = [];
 players = ["Nick","Ziplox","Safa","Jeff","Magoo","Rosen","Ced","Rob","Adi","James","Bader","Koplow","Sean", "Arambula","Jesse"];
 playerList = [];
-for each player in players:
+for player in players:
   playerList.append({"name":player,"wins":0,"games":0});
 
 
@@ -37,4 +37,4 @@ matchup.append( {"home":[7,14,5],"away":[11,8,9], "winners":[ ]});
 matchup.append( {"home":[12,1,13],"away":[10,2,4], "winners":[ ]});
 
 for i in len(matchup):
-  print "Game "+ str(i+1) + " is " + playerList[matchup[i]["home"][0]]["name"] + ", " + playerList[matchup[i]["home"][1]]["name"] + ", and "+playerList[matchup[i]["home"][2]]["name"] +" against "+playerList[matchup[i]["away"][0]]["name"]+", "+playerList[matchup[i]["away"][1]]["name"]+", and " + playerList[matchup[i]["away"][2]]["name"]
+  print "Game "+ str(i+1) + " is " + playerList[matchup[i]["home"][0]-1]["name"] + ", " + playerList[matchup[i]["home"][1]-1]["name"] + ", and "+playerList[matchup[i]["home"][2]-1]["name"] +" against "+playerList[matchup[i]["away"][0]-1]["name"]+", "+playerList[matchup[i]["away"][1]-1]["name"]+", and " + playerList[matchup[i]["away"][2]-1]["name"]
