@@ -39,5 +39,5 @@ matchup.append( {"home":[11,5,12],"away":[9,1,3], "winners":[ ], "tv":tv[1]});
 matchup.append( {"home":[7,14,5],"away":[11,8,9], "winners":[ ], "tv":tv[0]});
 matchup.append( {"home":[12,1,13],"away":[10,2,4], "winners":[ ], "tv":tv[1]});
 
-for i in len(matchup):
+for i in range(len(matchup)):
   print "Game "+ str(i+1) + " is " + playerList[matchup[i]["home"][0]-1]["name"] + ", " + playerList[matchup[i]["home"][1]-1]["name"] + ", and "+playerList[matchup[i]["home"][2]-1]["name"] +" against "+playerList[matchup[i]["away"][0]-1]["name"]+", "+playerList[matchup[i]["away"][1]-1]["name"]+", and " + playerList[matchup[i]["away"][2]-1]["name"] + "on the "+matchup[i]["tv"]+" TV"
