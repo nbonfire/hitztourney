@@ -13,20 +13,69 @@
 	<script>window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')</script>-->
 	<script src="js/jquery.min.js"></script>
 	<!-- Anything Slider -->
-	<link rel="stylesheet" href="css/anythingslider.css">
-	<script src="js/jquery.anythingslider.js"></script>
+	<!--link rel="stylesheet" href="css/anythingslider.css"-->
+	<!--script src="js/jquery.anythingslider.js"></script-->
 	<!-- include the animate.css library -->
 	<link rel="stylesheet" href="css/animate.css">
 	<!-- AnythingSlider optional extensions, needed for animate.css compatibility -->
-	<script src="js/jquery.anythingslider.fx.js"></script>
+	<!--script src="js/jquery.anythingslider.fx.js"></script-->
 <!-- Add additional stylesheets here -->
-<link rel="stylesheet" href="hitz.css">
-<link rel="stylesheet" href="css/theme-metallic.css">
+<link rel="stylesheet" href="css/hitz.css">
+<!--link rel="stylesheet" href="css/theme-metallic.css"-->
 
 <link rel="stylesheet" href="swfobject.js">
-<script src="hitz.js"></script>
+<!--script src="js/hitz.js"></script-->
+<script>
+$('.noWinner').click(function(){
+	$.ajax({
 
-<ul id="slider">
-    <li><center><div class="round">Round 1</div><p> <a href="/pickwinner?id=1&team=home" class="redbutton">Ziplox, Nick, Jesse</a> vs <a href="/pickwinner?id=1&team=away" class="bluebutton" id="">Rosen, Ced, Jeff</a></p></li>
-    <li> <center><div class="round">Round 2</div><p><a href="/pickwinner?id=2&team=home" class="redbutton"><div class="winner"></div>James, Bader, Magoo</a> vs <a href="/pickwinner?id=2&team=away" class="bluebutton">Rob, Adi, Safa</a></p></li>
+		type: "GET",
+		url: "pickwinner",
+		async: false,
+		data: "match="+$(this).attr('match')+"&team=" + $(this).attr('team'),
+		success: function(data){
+			alert(data);
+			$(this).parent().parent().parent().fadeOut("slow");
+			$(this).parent().parent().html(data);
+			$(this).parent().fadeIn("slow");
+		}
+	});
+	return false;
+});
+function loadMatchTest(match, team) {
+	$.ajax({
+		type: "GET",
+		url: "/pickwinner",
+		data: "match="+match+"&team=" + team,
+		success: function(data){
+			$(this).parent().parent().parent().fadeOut("slow");
+			$(this).parent().parent().parent().html(data);
+			$(this).parent().parent().parent().fadeIn("slow");
+			return false;
+		}
+
+	});
+	return false;
+}
+function loadMatch(index)
+{
+	var xmlhttp;
+	xmlhttp = new XMLHttpRequest();
+	xmlhttp.onreadystatechange=function()
+	{
+		if (xmlhttp.readyState==4 && xmlhttp.status==200)
+			{
+				alert(xmlhttp.responseText)
+				document.getElementByID(index).innerHTML=xmlhttp.responseText;
+			}
+	}
+	xmlhttp.open("GET",$(this).attr('data-url'),true);
+	xmlhttp.send();
+	return false;
+}
+</script><center>
+<ul id="matchList">
+	${matchList}
+    <!--li><center><div class="round">Round 1</div><p> <a href="/pickwinner?id=1&team=home" class="redbutton">Ziplox, Nick, Jesse</a> vs <a href="/pickwinner?id=1&team=away" class="bluebutton" id="">Rosen, Ced, Jeff</a></p></li>
+    <li> <center><div class="round">Round 2</div><p><a href="/pickwinner?id=2&team=home" class="redbutton"><div class="winner"></div>James, Bader, Magoo</a> vs <a href="/pickwinner?id=2&team=away" class="bluebutton">Rob, Adi, Safa</a></p></li-->
 </ul>

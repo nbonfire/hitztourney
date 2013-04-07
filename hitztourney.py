@@ -1,15 +1,19 @@
 #hitztourney.py
 #port 4579
-
+import os
 import cherrypy
+from mako.template import Template
+#from mako.template import TemplateLookup
 
-rootDir = os.path.abspath(".")
+rootDir = os.path.abspath("/Users/nickb/Projects/hitztourney/")
 
 matchup = [];
-players = ["Nick","Ziplox","Safa","Jeff","Magoo","Rosen","Ced","Rob","Adi","James","Bader","Koplow","Sean", "Arambula","Jesse"];
+players = ["Nick","Ziplox","Safa","Jeff","Magoo","Rosen","Ced","White Rob","Adi","James","Bader","Koplow","Sean", "Arambula","Jesse"];
+rankedOrder=[];
 playerList = [];
-for player in players:
-  playerList.append({"name":player,"wins":0,"games":0});
+
+for index, player in enumerate(players):
+  playerList.append({"name":player,"id":int(index),"wins":0,"games":0,"average":0.000});
 tv=["Samsung","Sony"]
 if len(players)==15:
 	matchup.append( {"home":[2,10,8],	"away":[14,1,5], 	"winners":	{"id": [],"team":"none"}, "tv":tv[0]});
@@ -98,32 +102,144 @@ else:
 def checkWin(game,team):
 	if game['winners']['team'] == team :
 		return '<span class="winner">'
-	else
+	else:
 		return '<span class="loser">'
+
+def compare_wins(a,b):
+	if a['games']>0 and b['games']>0:
+		return cmp(b["wins"]/b["games"], a["wins"]/a["games"])
+	elif a['games']>0:
+		return cmp(a['wins'],0)
+
+
+def updateLeaderboard():
+	for player in range(len(players)):
+		playerList[player]['wins']=0
+		playerList[player]['games']=0
+		playerList[player]['average']=0.000
+	completedgames = []
+	for match in matchup:
+		if match['winners']['team'] != 'none':
+			completedgames.append(match)
+	if completedgames != []:
+		for match in completedgames:
+			for playerid in match['winners']['id']:
+				playerList[playerid-1]['wins']+=1
+				playerList[playerid-1]['games']+=1
+				playerList[playerid-1]['average']=(100*playerList[playerid-1]['wins']/playerList[playerid-1]['games'])
+			if match['winners']['team']=='away':
+				for playerid2 in match['home']:
+					playerList[playerid2-1]['games']+=1
+					playerList[playerid2-1]['average']=(100*playerList[playerid2-1]['wins']/playerList[playerid2-1]['games'])
+			else:
+				for playerid3 in match['away']:
+					playerList[playerid3-1]['games']+=1
+					playerList[playerid3-1]['average']=(100*playerList[playerid3-1]['wins']/playerList[playerid3-1]['games'])
+
+			
+		
+		#rankedOrder = sorted(playerList,compare_wins)
+		rankedOrder = sorted(playerList,key=lambda x: x['average'], reverse=True)
+	else: 
+		rankedOrder = playerList
+	returnString=""
+	for i,player in enumerate(rankedOrder):
+		returnString+='\n<tr><td class="rank">'+str(i+1)+'.</td><td class="playername">'+player["name"]+'  </td><td class="wins">'
+		returnString+=str(player["wins"])+' </td><td class="games">'+str(player["games"])+' </td><td class="average">'+str(player["average"])+'</td></tr>'
+	return returnString
+matchesTemplate = """<li id={match}><div class="match">Match {match} <p>
+<a href="javascript:loadMatchTest({match},'home')" team="home" match={match} class="{homewinstatus}">
+{listOfHomeNames}</a> 
+vs 
+<a href="javascript:loadMatchTest({match},'away')" team="away" match={match} class="{awaywinstatus}" >{listOfAwayNames}</a>
+</p></li></div>\n
+""" # Round number, homewinstatus ,home team names list, awaywinstatus, away team names list
+
+def processMatch(matchid, match):
+	if match["winners"]["team"] == 'home':
+		homestatus = 'winningTeam'
+		awaystatus = 'losingTeam'
+	elif match['winners']['team'] == 'away':
+		homestatus = 'losingTeam'
+		awaystatus = 'winningTeam'
+	else:
+		homestatus = 'noWinner'
+		awaystatus = 'noWinner'
+	homeNames = ''
+	awayNames = ''
+	
+	for k,playerid in enumerate(match['home']):
+		print str(playerid) + " " +players[playerid-1]
+		homeNames+=players[playerid-1]
+		if k < len(match['home'])-1:
+			homeNames+=", "
+	
+	for k,playerid in enumerate(match['away']):
+		awayNames+=players[playerid-1]
+		if k < len(match['away'])-1:
+			awayNames+=", "
+	return matchesTemplate.format(match=matchid+1,homewinstatus=homestatus,awaywinstatus=awaystatus,listOfHomeNames=homeNames,listOfAwayNames=awayNames)
+
+def generateMatchList():
+	matchListString = ""
+	for i, match in enumerate(matchup):
+		
+		matchListString+=processMatch(i, match)
+	return matchListString
 
 class HitzTourneyRunner(object):
 	@cherrypy.expose
-	def index(self):
-		#return header + generated list + footer
+	def update():
+		return updateLeaderboard()
 
 	@cherrypy.expose
-	def pickwinner(self, *args):
-
-config = {'/css':
+	def leaderboard(self):
+		#return header + generated list of records + footer		
+		leaderboardBody = updateLeaderboard()
+		return Template(filename='htdocs/leaderboard.html', input_encoding = 'utf-8').render(leaderboardList=leaderboardBody)
+	@cherrypy.expose
+	def index(self):
+		#return header + generated list + footer
+		matchListBody = generateMatchList()
+		return Template(filename='htdocs/index.html', input_encoding = 'utf-8').render(matchList=matchListBody)
+		
+	@cherrypy.expose
+	def pickwinner(self, **kwargs):
+		#
+		matchindex=int(kwargs['match'])-1
+		matchup[matchindex]['winners']['team']=kwargs['team']
+		matchup[matchindex]['winners']['id']=matchup[matchindex][kwargs['team']]
+		#print str(matchup[int(kwargs['match'])-1]['winners'])
+		matchListBody = generateMatchList()
+		return processMatch(matchindex,matchup[matchindex])
+		#return Template(filename='htdocs/index.html', input_encoding = 'utf-8').render(matchList=matchListBody)
+#print rootDir#
+#print os.path.join(rootDir, u'css')
+current_dir = os.path.dirname(os.path.abspath(__file__))
+configtest = {
+			'/css':
 				{'tools.staticdir.on': True,
-				 'tools.staticdir': os.path.join(rootDir , u'css')
+				 'tools.staticdir.dir': os.path.join(current_dir, 'htdocs/css')
 				}, 
-		  '/js':
+		  	'/js':
 		  		{'tools.staticdir.on': True,
-				 'tools.staticdir': os.path.join(rootDir , u'js')
+				 'tools.staticdir.dir': os.path.join(current_dir, 'htdocs/js')
 				}, 
-		  '/media':
-		  		{'tools.staticdir.on': True,
-				 'tools.staticdir': os.path.join(rootDir , u'media')
-				},				
+		  	#'/media':
+		  	#	{'tools.staticdir.on': True,
+			#	 'tools.staticdir.dir': '/media'
+			#	},		
+			#'/':
+			#	{'tools.staticdir.on': True,
+			#	 'tools.staticdir.root': os.path.join(current_dir, "htdocs")
+			#	 }
+
 
 		}
 
 # test
+
 for i in range(len(matchup)):
   print "Game "+ str(i+1) + " is " + playerList[matchup[i]["home"][0]-1]["name"] + ", " + playerList[matchup[i]["home"][1]-1]["name"] + ", and "+playerList[matchup[i]["home"][2]-1]["name"] +" against "+playerList[matchup[i]["away"][0]-1]["name"]+", "+playerList[matchup[i]["away"][1]-1]["name"]+", and " + playerList[matchup[i]["away"][2]-1]["name"] + " on the "+matchup[i]["tv"]+" TV"
+#cherrypy.config.update(configtest)
+cherrypy.quickstart(HitzTourneyRunner(), config=configtest)
