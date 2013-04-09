@@ -48,9 +48,21 @@ function loadMatchTest(match, team) {
 		url: "/pickwinner",
 		data: "match="+match+"&team=" + team,
 		success: function(data){
-			$(this).parent().parent().parent().fadeOut("slow");
-			$(this).parent().parent().parent().html(data);
-			$(this).parent().parent().parent().fadeIn("slow");
+			
+			$("#"+match).html(data);
+			
+			return false;
+		}
+
+	});
+	$.ajax({
+		type: "GET",
+		url: "/leaderboard",
+		
+		success: function(data){
+			
+			$("#leaderboard").html(data);
+			
 			return false;
 		}
 
@@ -74,6 +86,9 @@ function loadMatch(index)
 	return false;
 }
 </script><center>
+<div id="leaderboard">
+	
+</div>
 <ul id="matchList">
 	${matchList}
     <!--li><center><div class="round">Round 1</div><p> <a href="/pickwinner?id=1&team=home" class="redbutton">Ziplox, Nick, Jesse</a> vs <a href="/pickwinner?id=1&team=away" class="bluebutton" id="">Rosen, Ced, Jeff</a></p></li>
