@@ -25,23 +25,8 @@
 
 <link rel="stylesheet" href="swfobject.js"> -->
 <script src="leaders.js"></script>
-<script>
-function loadXMLDoc()
-{
-	var xmlhttp;
-	xmlhttp = new XMLHttpRequest();
-	xmlhttp.onreadystatechange=function()
-	{
-		if (xmlhttp.readyState==4 && xmlhttp.status==200)
-			{
-				document.getElementByID("leaderboard").innerHTML=xmlhttp.responseText;
-			}
-	}
-	xmlhttp.open("GET","update",true);
-	xmlhttp.send();
-}
-</script>
-<button type="button" onclick="loadXMLDoc()">Update List</button>
+
 <table id="leaderboard">
+	<th><td>Leaders</td></th>
     ${leaderboardList}
 </table>
