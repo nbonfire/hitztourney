@@ -145,7 +145,7 @@ def updateLeaderboard():
 	returnString=""
 	for i,player in enumerate(rankedOrder):
 		returnString+='\n<tr><td class="rank">'+str(i+1)+'.</td><td class="playername">'+player["name"]+'  </td><td class="wins">'
-		returnString+=str(player["wins"])+' </td><td class="games">'+str(player["games"])+' </td><td class="average">'+str(player["average"])+'</td></tr>'
+		returnString+=str(player["wins"])+' </td><td class="games">'+str(player["games"])+' </td><td class="average">'+'{percent:.0%}'.format(percent=player["average"])+'</td></tr>'
 	return returnString
 matchesTemplate = """<li class="matchup" id="{match}"><div class="match">Match {match} - on the {tv} TV<p>
 <a href="javascript:loadMatchTest('{match}','home')" team="home" match={match} class="{homewinstatus}">
