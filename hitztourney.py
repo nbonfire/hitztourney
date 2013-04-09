@@ -172,12 +172,12 @@ def processMatch(matchid, match):
 		#print str(playerid) + " " +players[playerid-1] #
 		homeNames+=players[playerid-1]
 		if k < len(match['home'])-1:
-			homeNames+=", "
+			homeNames+="<br> "
 	
 	for k,playerid in enumerate(match['away']):
 		awayNames+=players[playerid-1]
 		if k < len(match['away'])-1:
-			awayNames+=", "
+			awayNames+="<br> "
 	return matchesTemplate.format(match=matchid+1,homewinstatus=homestatus,awaywinstatus=awaystatus,listOfHomeNames=homeNames,listOfAwayNames=awayNames,tv=match['tv'])
 
 def generateMatchList():
