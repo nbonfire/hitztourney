@@ -130,7 +130,7 @@ def updateLeaderboard():
 			if match['winners']['team']=='away':
 				for playerid2 in match['home']:
 					playerList[playerid2-1]['games']+=1
-					playerList[playerid2-1]['average']=float(playerList[playerid2-1]['wins']/float(playerList[playerid2-1]['games'])
+					playerList[playerid2-1]['average']=float(playerList[playerid2-1]['wins'])/float(playerList[playerid2-1]['games'])
 			else:
 				for playerid3 in match['away']:
 					playerList[playerid3-1]['games']+=1
@@ -147,7 +147,7 @@ def updateLeaderboard():
 		returnString+='\n<tr><td class="rank">'+str(i+1)+'.</td><td class="playername">'+player["name"]+'  </td><td class="wins">'
 		returnString+=str(player["wins"])+' </td><td class="games">'+str(player["games"])+' </td><td class="average">'+'{percent:.0%}'.format(percent=player["average"])+'</td></tr>'
 	return returnString
-matchesTemplate = """<li class="matchup" id="{match}"><div class="match">Match {match} - on the {tv} TV<p>
+matchesTemplate = """<li class="matchup" id="{match}"><div class="match">Match {match} - {tv}<p>
 <a href="javascript:loadMatchTest('{match}','home')" team="home" match={match} class="{homewinstatus}">
 {listOfHomeNames}</a> 
 vs 
