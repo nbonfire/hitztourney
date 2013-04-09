@@ -126,15 +126,15 @@ def updateLeaderboard():
 			for playerid in match['winners']['id']:
 				playerList[playerid-1]['wins']+=1
 				playerList[playerid-1]['games']+=1
-				playerList[playerid-1]['average']=(1000*playerList[playerid-1]['wins']/playerList[playerid-1]['games'])
+				playerList[playerid-1]['average']=float(playerList[playerid-1]['wins'])/float(playerList[playerid-1]['games'])
 			if match['winners']['team']=='away':
 				for playerid2 in match['home']:
 					playerList[playerid2-1]['games']+=1
-					playerList[playerid2-1]['average']=(1000*playerList[playerid2-1]['wins']/playerList[playerid2-1]['games'])
+					playerList[playerid2-1]['average']=float(playerList[playerid2-1]['wins']/float(playerList[playerid2-1]['games'])
 			else:
 				for playerid3 in match['away']:
 					playerList[playerid3-1]['games']+=1
-					playerList[playerid3-1]['average']=(1000*playerList[playerid3-1]['wins']/playerList[playerid3-1]['games'])
+					playerList[playerid3-1]['average']=float(playerList[playerid3-1]['wins'])/float(playerList[playerid3-1]['games'])
 
 			
 		
