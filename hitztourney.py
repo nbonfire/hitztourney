@@ -11,6 +11,7 @@ matchup = [];
 players = ["Nick","Ziplox","Safa","Jeff","Magoo","Rosen","Ced","White Rob","Adi","James","Bader","Koplow","Sean", "Arambula","Jesse"];
 rankedOrder=[];
 playerList = [];
+nextMatchIndex = 0
 
 for index, player in enumerate(players):
   playerList.append({"name":player,"id":int(index),"wins":0,"games":0,"average":0.000});
@@ -188,15 +189,22 @@ def generateMatchList():
 	return matchListString
 
 class HitzTourneyRunner(object):
+	
 	@cherrypy.expose
 	def update():
 		return updateLeaderboard()
 
 	@cherrypy.expose
-	def leaderboard(self):
+	def embedLeaderboard(self):
 		#return header + generated list of records + footer		
 		leaderboardBody = updateLeaderboard()
 		return Template(filename='htdocs/leaderboard.html', input_encoding = 'utf-8').render(leaderboardList=leaderboardBody)
+	
+	@cherrypy.expose
+	def leaderboard(self):	
+	leaderboardBody = updateLeaderboard()
+	nextMatch = determineNextMatch()
+	return Template(filename='htdocs/standaloneleaderboard.html', input_encoding = 'utf-8').render(leaderboardList=leaderboardBody)
 	@cherrypy.expose
 	def index(self):
 		#return header + generated list + footer
@@ -209,6 +217,8 @@ class HitzTourneyRunner(object):
 		matchindex=int(kwargs['match'])-1
 		matchup[matchindex]['winners']['team']=kwargs['team']
 		matchup[matchindex]['winners']['id']=matchup[matchindex][kwargs['team']]
+		nextMatchIndex = (matchindex / 2) * 2 # python integer division returns the floor, so we always get an even number this way, showing the next match.
+		nextMatchIndex = nextMatchIndex * 2
 		#print str(matchup[int(kwargs['match'])-1]['winners'])
 		matchListBody = generateMatchList()
 		return processMatch(matchindex,matchup[matchindex])
