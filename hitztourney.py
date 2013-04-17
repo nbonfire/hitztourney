@@ -3,6 +3,9 @@
 import os
 import cherrypy
 from mako.template import Template
+import shelve
+import threading
+import time
 #from mako.template import TemplateLookup
 
 rootDir = os.path.abspath("/Users/nickb/Projects/hitztourney/")
@@ -13,6 +16,8 @@ rankedOrder=[];
 playerList = [];
 nextMatchIndex = 0
 
+#initialize db lock
+_dbLocker = threading.Lock()
 for index, player in enumerate(players):
   playerList.append({"name":player,"id":int(index),"wins":0,"games":0,"average":0.000});
 tv=["Samsung","Sony"]
@@ -187,7 +192,10 @@ def generateMatchList():
 		
 		matchListString+=processMatch(i, match)
 	return matchListString
+class Savedata(object):
+	{
 
+	}
 class HitzTourneyRunner(object):
 	
 	@cherrypy.expose
