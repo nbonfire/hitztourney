@@ -20,17 +20,25 @@
 	<!-- AnythingSlider optional extensions, needed for animate.css compatibility -->
 	<!-- <script src="js/jquery.anythingslider.fx.js"></script>
 <!-- Add additional stylesheets here -->
-<link rel="stylesheet" href="leaders.css">
+<link rel="stylesheet" href="css/hitz.css">
 <!--<link rel="stylesheet" href="css/theme-metallic.css">
 
 <link rel="stylesheet" href="swfobject.js"> -->
 <script src="leaders.js"></script>
 </head>
-<body>
-	Next Match: ${nextmatch}
+<body><center>
+	Next Match: 
+<ul id="matchList">
+	${nextmatch}
+</ul>
 <table id="leaderboard">
 	<th><td>Leaders</td></th>
     ${leaderboardList}
 </table>
+
+<div id="logheader">Match History (newest to oldest)</div>
+<ul id="matchLog">
+	${matchlog}
+</ul>
 </body>
 </html>

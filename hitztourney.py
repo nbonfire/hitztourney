@@ -3,12 +3,13 @@
 import os
 import cherrypy
 from mako.template import Template
+from datetime import datetime
 #from mako.template import TemplateLookup
 
 rootDir = os.path.abspath("/Users/nickb/Projects/hitztourney/")
 
 matchup = [];
-players = ["Nick","Ziplox","Safa","Jeff","Magoo","Rosen","Ced","White Rob","Adi","James","Bader","Koplow","Sean", "Arambula","Jesse"];
+players = ["Nick","Ziplox","Kent","Jeff","Magoo","Rosen","Ced","White Rob","Adi","James","Bader","Koplow","Sean", "Arambulance","Jesse"];
 rankedOrder=[];
 playerList = [];
 nextMatchIndex = 0
@@ -148,6 +149,12 @@ def updateLeaderboard():
 		returnString+='\n<tr><td class="rank">'+str(i+1)+'.</td><td class="playername">'+player["name"]+'  </td><td class="wins">'
 		returnString+=str(player["wins"])+' </td><td class="games">'+str(player["games"])+' </td><td class="average">'+'{percent:.0%}'.format(percent=player["average"])+'</td></tr>'
 	return returnString
+
+def displayLeaderboard():
+	for i,player in enumerate(rankedOrder):
+		returnString+='\n<tr><td class="rank">'+str(i+1)+'.</td><td class="playername">'+player["name"]+'  </td><td class="wins">'
+		returnString+=str(player["wins"])+' </td><td class="games">'+str(player["games"])+' </td><td class="average">'+'{percent:.0%}'.format(percent=player["average"])+'</td></tr>'
+	return returnString
 matchesTemplate = """<li class="matchup" id="{match}"><div class="match">Match {match} - {tv}<p>
 <a href="javascript:loadMatchTest('{match}','home')" team="home" match={match} class="{homewinstatus}">
 {listOfHomeNames}</a> 
@@ -155,6 +162,29 @@ vs
 <a href="javascript:loadMatchTest('{match}','away')" team="away" match={match} class="{awaywinstatus}" >{listOfAwayNames}</a>
 </p></li></div>\n
 """ # Round number, homewinstatus ,home team names list, awaywinstatus, away team names list
+nextmatchTemplate = """<li class="matchup" id="{match}"><div class="match">Match {match} - {tv}<p>
+<a href="#" team="home" match={match} class="noWinner">
+{listOfHomeNames}</a> 
+vs 
+<a href="#" team="away" match={match} class="noWinner" >{listOfAwayNames}</a>
+</p></li></div>
+"""
+matchlogTemplate="""<li class="logitem" id="{match}"><div class="match">Match {match} - {tv} - {time}<p> <div class="winningTeam">{names}</div></p>
+"""
+
+matchHistory=[]
+
+def matchLog(matchDict):
+	matchHistory.append(matchDict)
+	#sort by matchDict['match'] then matchDict['time']
+
+def listNames(team,match):
+	names =""
+	for k,playerid in enumerate(match[team]):
+		names+=players[playerid-1]
+		if k < len(match[team])-1:
+			names+="<br>"
+	return names
 
 def processMatch(matchid, match):
 	if match["winners"]["team"] == 'home':
@@ -169,16 +199,8 @@ def processMatch(matchid, match):
 	homeNames = ''
 	awayNames = ''
 	
-	for k,playerid in enumerate(match['home']):
-		#print str(playerid) + " " +players[playerid-1] #
-		homeNames+=players[playerid-1]
-		if k < len(match['home'])-1:
-			homeNames+="<br> "
-	
-	for k,playerid in enumerate(match['away']):
-		awayNames+=players[playerid-1]
-		if k < len(match['away'])-1:
-			awayNames+="<br> "
+	homeNames = listNames('home',match)
+	awayNames = listNames('away',match)
 	return matchesTemplate.format(match=matchid+1,homewinstatus=homestatus,awaywinstatus=awaystatus,listOfHomeNames=homeNames,listOfAwayNames=awayNames,tv=match['tv'])
 
 def generateMatchList():
@@ -187,6 +209,20 @@ def generateMatchList():
 		
 		matchListString+=processMatch(i, match)
 	return matchListString
+
+def determineNextMatch():
+	for i, match in enumerate(matchup):
+		if match['winners']['team']=='none':
+			return i
+	return 0
+def generateMatchLog():
+	returnString=""
+	for i, item in enumerate(matchHistory):
+		print str(item)+" "
+		print listNames(item['winners'],matchup[item['match']])
+		print matchup[item['match']]['tv'] #+ " "+item['time']
+		returnString += matchlogTemplate.format(match=item["match"]+1,tv=matchup[item["match"]]['tv'],time=item['time'],names=listNames(item['winners'],matchup[item['match']]))
+	return returnString
 
 class HitzTourneyRunner(object):
 	
@@ -202,9 +238,16 @@ class HitzTourneyRunner(object):
 	
 	@cherrypy.expose
 	def leaderboard(self):	
-	leaderboardBody = updateLeaderboard()
-	nextMatch = determineNextMatch()
-	return Template(filename='htdocs/standaloneleaderboard.html', input_encoding = 'utf-8').render(leaderboardList=leaderboardBody)
+		leaderboardBody = updateLeaderboard()
+		nextMatchIndex = determineNextMatch()
+		nextMatch=""
+		for i in range(0,2):
+			homeNames = listNames('home',matchup[nextMatchIndex+i])
+			awayNames = listNames('away',matchup[nextMatchIndex+i])
+			nextMatch += nextmatchTemplate.format(match=nextMatchIndex+1+i,listOfHomeNames=homeNames,listOfAwayNames=awayNames,tv=matchup[nextMatchIndex+i]['tv'])
+
+
+		return Template(filename='htdocs/standaloneleaderboard.html', input_encoding = 'utf-8').render(leaderboardList=leaderboardBody, nextmatch=nextMatch, matchlog = generateMatchLog())
 	@cherrypy.expose
 	def index(self):
 		#return header + generated list + footer
@@ -220,6 +263,8 @@ class HitzTourneyRunner(object):
 		nextMatchIndex = (matchindex / 2) * 2 # python integer division returns the floor, so we always get an even number this way, showing the next match.
 		nextMatchIndex = nextMatchIndex * 2
 		#print str(matchup[int(kwargs['match'])-1]['winners'])
+		matchLog({"match":matchindex,'winners':kwargs['team'], 'time':datetime.now().strftime('%I:%M:%S%p')})
+
 		matchListBody = generateMatchList()
 		return processMatch(matchindex,matchup[matchindex])
 		#return Template(filename='htdocs/index.html', input_encoding = 'utf-8').render(matchList=matchListBody)
