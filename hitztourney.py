@@ -5,6 +5,12 @@ import cherrypy
 from mako.template import Template
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+import shelve
+import threading
+import time
+>>>>>>> 203508b34dc7ecfaac9c8178a3905b4281be8cab
 =======
 import shelve
 import threading
@@ -23,7 +29,12 @@ rootDir = os.path.abspath("/Users/nickb/Projects/hitztourney/")
 matchup = [];
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 players = ["Nick","Ziplox","Kent","Jeff","Magoo","Rosen","Ced","White Rob","Adi","James","Bader","Koplow","Sean", "Arambulance","Jesse"];
+=======
+players = ["Adi","Bader","Ced","Gio","James","Jeff","Jesse","Jon","Kent","Koplow","Magoo","Nick","Rosen","Sean","White Rob","Ziplox"];
+
+>>>>>>> 203508b34dc7ecfaac9c8178a3905b4281be8cab
 =======
 players = ["Adi","Bader","Ced","Gio","James","Jeff","Jesse","Jon","Kent","Koplow","Magoo","Nick","Rosen","Sean","White Rob","Ziplox"];
 
