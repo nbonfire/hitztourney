@@ -224,14 +224,14 @@ matchesTemplate = """<li class="matchup" id="{match}"><div class="match">Match {
 {listOfHomeNames}</a> 
 vs 
 <a href="javascript:loadMatchTest('{match}','away')" team="away" match={match} class="{awaywinstatus}" >{listOfAwayNames}</a>
-</p></li></div>\n
+</p> Bye: <a href="#" team="bye" match={match} class="noWinner">{byenames}</a></li></div>\n
 """ # Round number, homewinstatus ,home team names list, awaywinstatus, away team names list
 nextmatchTemplate = """<li class="matchup" id="{match}"><div class="match">Match {match} - {tv}<p>
 <a href="#" team="home" match={match} class="noWinner">
 {listOfHomeNames}</a> 
 vs 
-<a href="#" team="away" match={match} class="noWinner" >{listOfAwayNames}</a>
-</p></li></div>
+<a href="#" team="away" match={match} class="noWinner" >{listOfAwayNames}</a> Bye: <a href="#" team="bye" match={match} class="noWinner">{byenames}</a>
+</p><a href="#"></a></li></div>
 """
 matchlogTemplate="""<li class="logitem" id="{match}"><div class="match">Match {match} - {tv} - {time}<p> <div class="winningTeam">{names}</div></p>
 """
@@ -265,7 +265,8 @@ def processMatch(matchid, match):
 	
 	homeNames = listNames('home',match)
 	awayNames = listNames('away',match)
-	return matchesTemplate.format(match=matchid+1,homewinstatus=homestatus,awaywinstatus=awaystatus,listOfHomeNames=homeNames,listOfAwayNames=awayNames,tv=match['tv'])
+	byeNames = listNames('bye',match)
+	return matchesTemplate.format(match=matchid+1,homewinstatus=homestatus,awaywinstatus=awaystatus,listOfHomeNames=homeNames,listOfAwayNames=awayNames,tv=match['tv'],byenames=byeNames)
 
 def generateMatchList():
 	matchListString = ""
@@ -301,19 +302,20 @@ class HitzTourneyRunner(object):
 		return Template(filename='htdocs/leaderboard.html', input_encoding = 'utf-8').render(leaderboardList=leaderboardBody)
 	
 	@cherrypy.expose
-	def leaderboard(self):	
+	def index(self):	
 		leaderboardBody = updateLeaderboard()
 		nextMatchIndex = determineNextMatch()
 		nextMatch=""
 		for i in range(0,2):
 			homeNames = listNames('home',matchup[nextMatchIndex+i])
 			awayNames = listNames('away',matchup[nextMatchIndex+i])
-			nextMatch += nextmatchTemplate.format(match=nextMatchIndex+1+i,listOfHomeNames=homeNames,listOfAwayNames=awayNames,tv=matchup[nextMatchIndex+i]['tv'])
+			byeNames = listNames('bye',matchup[nextMatchIndex+i])
+			nextMatch += nextmatchTemplate.format(match=nextMatchIndex+1+i,listOfHomeNames=homeNames,listOfAwayNames=awayNames,byenames=byeNames,tv=matchup[nextMatchIndex+i]['tv'])
 
 
 		return Template(filename='htdocs/standaloneleaderboard.html', input_encoding = 'utf-8').render(leaderboardList=leaderboardBody, nextmatch=nextMatch, matchlog = generateMatchLog())
 	@cherrypy.expose
-	def index(self):
+	def admin(self):
 		#return header + generated list + footer
 		matchListBody = generateMatchList()
 		return Template(filename='htdocs/index.html', input_encoding = 'utf-8').render(matchList=matchListBody,leaderboard=updateLeaderboard())
