@@ -7,6 +7,8 @@ import shelve
 import threading
 import time
 from datetime import datetime
+from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
+from ws4py.websocket import WebSocket
 #from mako.template import TemplateLookup
 
 rootDir = os.path.abspath("/Users/nickb/Projects/hitztourney/")
@@ -19,7 +21,7 @@ playerList = [];
 nextMatchIndex = 0
 
 #initialize db lock
-_dbLocker = threading.Lock()
+#_dbLocker = threading.Lock()
 for index, player in enumerate(players):
   playerList.append({"name":player,"id":int(index),"wins":0,"games":0,"average":0.000});
 tv=["Samsung","Sony"]
@@ -289,6 +291,20 @@ def generateMatchLog():
 		returnString += matchlogTemplate.format(match=item["match"]+1,tv=matchup[item["match"]]['tv'],time=item['time'],names=listNames(item['winners'],matchup[item['match']]))
 	return returnString
 
+WebSocketPlugin(cherrypy.engine).subscribe()
+cherrypy.tools.websocket = WebSocketTool()
+
+SUBSCRIBERS = set()
+
+class Publisher(WebSocket):
+    def __init__(self, *args, **kw):
+        WebSocket.__init__(self, *args, **kw)
+        print str(self) + "connected"
+        SUBSCRIBERS.add(self)
+
+    def closed(self, code, reason=None):
+        SUBSCRIBERS.remove(self)
+
 class HitzTourneyRunner(object):
 	
 	@cherrypy.expose
@@ -350,6 +366,8 @@ configtest = {
 		  		{'tools.staticdir.on': True,
 				 'tools.staticdir.dir': os.path.join(current_dir, 'htdocs/media')
 				},  
+			'/ws': {'tools.websocket.on': True,
+					'tools.websocket.handler_cls': Publisher}
 		  	#'/media':
 		  	#	{'tools.staticdir.on': True,
 			#	 'tools.staticdir.dir': '/media'
