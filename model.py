@@ -1,8 +1,11 @@
 from elixir import *
+from trueskill import *
 
 metadata.bind = "sqlite:///hitz.db"
 metadata.bind.echo = True
-
+env = TrueSkill(draw_probability=dynamic_draw_probability)
+AWAY_TEAM=1
+HOME_TEAM=0
 
 class HitzPlayer(Entity):
 	name = Field(Unicode(64), unique=True, required=True)
@@ -10,7 +13,10 @@ class HitzPlayer(Entity):
 	password = Field(Unicode(24), required=True)
 	tags = OneToMany('Tag')
 	photo = Field(Binary, deferred=True)
-	rating = Field(Integer, default=1200)
+	rating = Field(PickleType, default=env.Rating())
+	wins = Field(Integer, default=0)
+	games = Field(Integer, default=0)
+
 	#mu = 
 	#sigma
 	def __repr__(self):
@@ -24,5 +30,8 @@ class Tag(Entity):
 		return '<Tag "%s" - %s >' % (self.tagname, self.player.name)
 
 class HitzPickupMatch(Entity):
+	awayTeam = ManyToOne('HitzTeam')
+	homeTeam = ManyToOne('HitzTeam')
+	winner = Field(Integer)
 
 class HitzTeam(Entity):
