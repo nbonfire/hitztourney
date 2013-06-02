@@ -9,6 +9,7 @@ import time
 from datetime import datetime
 from ws4py.server.cherrypyserver import WebSocketPlugin, WebSocketTool
 from ws4py.websocket import WebSocket
+import json
 #from mako.template import TemplateLookup
 
 WebSocketPlugin(cherrypy.engine).subscribe()
@@ -224,10 +225,13 @@ def updateLeaderboard():
 		rankedOrder = sorted(playerList,key=lambda x: x['average'], reverse=True)
 	else: 
 		rankedOrder = playerList
-	returnString=""
+	returnString="<table>"
 	for i,player in enumerate(rankedOrder):
 		returnString+='\n<tr><td class="rank">'+str(i+1)+'.</td><td class="playername">'+player["name"]+'  </td><td class="wins">'
 		returnString+=str(player["wins"])+' </td><td class="games">'+str(player["games"])+' </td><td class="average">'+'{percent:.0%}'.format(percent=player["average"])+'</td></tr>'
+	returnString+="</table>"
+	for conn in SUBSCRIBERS:
+		conn.send(json.dumps({"event":'leaderboard', 'data':returnString}))
 	return returnString
 
 def displayLeaderboard():
@@ -235,7 +239,7 @@ def displayLeaderboard():
 		returnString+='\n<tr><td class="rank">'+str(i+1)+'.</td><td class="playername">'+player["name"]+'  </td><td class="wins">'
 		returnString+=str(player["wins"])+' </td><td class="games">'+str(player["games"])+' </td><td class="average">'+'{percent:.0%}'.format(percent=player["average"])+'</td></tr>'
 	return returnString
-matchesTemplate = """<li class="matchup" id="{match}"><div class="match">Match {match} - {tv}<p>
+matchesTemplate = """<li class="matchup" id="match{match}"><div class="match">Match {match} - {tv}<p>
 <a href="javascript:loadMatchTest('{match}','home')" team="home" match={match} class="{homewinstatus}">
 {listOfHomeNames}</a> 
 vs 
@@ -282,13 +286,18 @@ def processMatch(matchid, match):
 	homeNames = listNames('home',match)
 	awayNames = listNames('away',match)
 	byeNames = listNames('bye',match)
-	return matchesTemplate.format(match=matchid+1,homewinstatus=homestatus,awaywinstatus=awaystatus,listOfHomeNames=homeNames,listOfAwayNames=awayNames,tv=match['tv'],byenames=byeNames)
+	returnString= matchesTemplate.format(match=matchid+1,homewinstatus=homestatus,awaywinstatus=awaystatus,listOfHomeNames=homeNames,listOfAwayNames=awayNames,tv=match['tv'],byenames=byeNames)
+	for conn in SUBSCRIBERS:
+		conn.send(json.dumps({"event":'.match'+str(matchid), 'data':matchListString}))
+	return returnString
 
 def generateMatchList():
 	matchListString = ""
 	for i, match in enumerate(matchup):
 		
 		matchListString+=processMatch(i, match)
+	for conn in SUBSCRIBERS:
+		conn.send(json.dumps({"event":'matchUpdate', 'data':matchListString}))
 	return matchListString
 
 def determineNextMatch():

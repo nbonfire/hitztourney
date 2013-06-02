@@ -16,6 +16,7 @@ class HitzPlayer(Entity):
 	rating = Field(PickleType, default=env.Rating())
 	wins = Field(Integer, default=0)
 	games = Field(Integer, default=0)
+	teams = OneToMany('HitzTeam')
 
 	#mu = 
 	#sigma
@@ -33,5 +34,8 @@ class HitzPickupMatch(Entity):
 	awayTeam = ManyToOne('HitzTeam')
 	homeTeam = ManyToOne('HitzTeam')
 	winner = Field(Integer)
+	date = Field(DateTime, default=datetime.datetime.now)
+	event = Field(Unicode(64))
 
 class HitzTeam(Entity):
+	players = ManyToMany('HitzPlayer')
