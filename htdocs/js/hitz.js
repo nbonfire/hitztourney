@@ -1,5 +1,77 @@
 $(function(){
     
+  /*
+        Ismael Celis 2010
+        Simplified WebSocket events dispatcher (no channels, no users)
+
+        var socket = new ServerEventsDispatcher();
+
+        // bind to server events
+        socket.bind('some_event', function(data){
+                alert(data.name + ' says: ' + data.message)
+        });
+
+        // broadcast events to all connected users
+        socket.trigger( 'some_event', {name: 'ismael', message : 'Hello world'} );
+  */
+  var ServerEventsDispatcher = function( ){
+        var loc = window.location, new_uri;
+        if (loc.protocol === "https:") {
+          new_uri = "wss:";
+        } else {
+          new_uri = "ws:";
+        }
+        new_uri += "//" + loc.host;
+        new_uri += loc.pathname + "/ws";
+        var conn = new WebSocket(new_uri);
+        var callbacks = {};
+
+        this.bind = function(event_name, callback){
+                callbacks[event_name] = callbacks[event_name] || [];
+                callbacks[event_name].push(callback);
+                return this;// chainable
+        };
+
+        this.trigger = function(event_name, data){
+                var payload = JSON.stringify([event_name, data]);
+                conn.send( payload ); // <= send JSON data to socket server
+                return this;
+        };
+
+        // dispatch to the right handlers
+        conn.onmessage = function(evt) {
+                data = evt.data;
+
+                if ( !data.charCodeAt(0) )
+                        data = data.substr(1);
+
+                var data = JSON.parse( data ),
+                        event_name = data[0],
+                        message = data[1];
+                dispatch(event_name, message)
+        };
+
+        conn.onclose = function(){dispatch('close',null)}
+        conn.onopen = function(){dispatch('open',null)}
+
+        var dispatch = function(event_name, message){
+                var chain = callbacks[event_name];
+                if(typeof chain == 'undefined') $(event_name).html(message)/*return*/; // no callbacks for this event
+                for(var i = 0; i < chain.length; i++){
+                        chain[i]( message )
+                }
+        }
+  };
+  
+
+  var server = new ServerEventsDispatcher();
+  server.bind('matchUpdate', function(evt){
+    $('.matchList').html(evt.data);
+  });
+  server.bind('leaderboard', function(evt){
+    $('.leaderboard').html(evt.data);
+  });
+
     $('.noWinner').click(function(){
   $.ajax({
 
@@ -59,29 +131,5 @@ function loadMatch(index)
   xmlhttp.send();
   return false;
 }
-      var loc = window.location, new_uri;
-    if (loc.protocol === "https:") {
-      new_uri = "wss:";
-    } else {
-      new_uri = "ws:";
-    }
-    new_uri += "//" + loc.host;
-    new_uri += loc.pathname + "/to/ws";
-    var ws = new WebSocket(new_uri);
-     ws.onopen = function()
-     {
-        // Web Socket is connected, send data using send()
-        ws.send("Message to send");
-        alert("Message is sent...");
-     };
-     ws.onmessage = function (evt) 
-     { 
-        var received_msg = evt.data;
-        alert("Message is received...");
-     };
-     ws.onclose = function()
-     { 
-        // websocket is closed.
-        alert("Connection is closed..."); 
-     };
+    
 });
