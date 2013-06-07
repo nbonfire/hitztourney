@@ -1,11 +1,20 @@
 from elixir import *
 from trueskill import *
+import pickle
 
 metadata.bind = "sqlite:///hitz.db"
 metadata.bind.echo = True
-env = TrueSkill(draw_probability=dynamic_draw_probability)
+
+firstrun=True
+if firstrun == True: #create env and save pickle
+	env = TrueSkill(draw_probability=dynamic_draw_probability)
+	pickle.dump(env, open("env.p", "wb"))
+else: #load from file and unpickle
+	env = pickle.load(open("env.p", "wb"))
+
 AWAY_TEAM=1
 HOME_TEAM=0
+
 
 class HitzPlayer(Entity):
 	name = Field(Unicode(64), unique=True, required=True)
@@ -39,3 +48,6 @@ class HitzPickupMatch(Entity):
 
 class HitzTeam(Entity):
 	players = ManyToMany('HitzPlayer')
+	teamrating = Field(PickleType, default=env.Rating())
+
+if __name__ == "__main__"
