@@ -124,6 +124,11 @@ ul#slider, ul#slider li {
 li {
 	list-style-type: none;
 }
+
+.selectablePlayer {
+	border: dashed;
+	border-radius: 2px;
+}
 #leaderboard {
     position: fixed;
     top: 1em;

@@ -1,16 +1,16 @@
 from elixir import *
 from trueskill import *
 import pickle
+import datetime
 
 metadata.bind = "sqlite:///hitz.db"
 metadata.bind.echo = True
+env = pickle.load(open("env.p", "rb"))
 
-firstrun=True
-if firstrun == True: #create env and save pickle
+def setup(): #create env and save pickle
 	env = TrueSkill(draw_probability=dynamic_draw_probability)
 	pickle.dump(env, open("env.p", "wb"))
-else: #load from file and unpickle
-	env = pickle.load(open("env.p", "wb"))
+
 
 AWAY_TEAM=1
 HOME_TEAM=0
@@ -25,17 +25,17 @@ class HitzPlayer(Entity):
 	rating = Field(PickleType, default=env.Rating())
 	wins = Field(Integer, default=0)
 	games = Field(Integer, default=0)
-	teams = OneToMany('HitzTeam')
+	teams = ManyToMany('HitzTeam')
 
 	#mu = 
 	#sigma
 	def __repr__(self):
-        return '<Player "%s">' % self.name
+		return '<Player "%s">' % self.name
 
 class Tag(Entity):
 	tagname = Field(Unicode(6))
 	created_date = Field(DateTime, default=datetime.datetime.now)
-	player = ManyToOne('Player')
+	player = ManyToOne('HitzPlayer')
 	def __repr__(self):
 		return '<Tag "%s" - %s >' % (self.tagname, self.player.name)
 
@@ -50,4 +50,7 @@ class HitzTeam(Entity):
 	players = ManyToMany('HitzPlayer')
 	teamrating = Field(PickleType, default=env.Rating())
 
-if __name__ == "__main__"
+if __name__ == "__main__":
+	pickle.load(env, open("env.p", "rb"))
+
+setup_all()
