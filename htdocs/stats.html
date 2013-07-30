@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<title>HITZ Stats for ${user}</title>
+	<link rel="shortcut icon" href="demos/images/favicon.ico" type="image/x-icon">
+	<link rel="apple-touch-icon" href="demos/images/apple-touch-icon.png">
+   
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css">
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
+    <script type="text/javascript" src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
+
+	
+<!-- Add additional stylesheets here -->
+<link rel="stylesheet" href="css/hitz.css">
+<!--link rel="stylesheet" href="css/theme-metallic.css"-->
+
+<script src="js/stats.js"></script>
+
+
+
+
+
+<body>
+    <div class="container">
+      <div class="navbar">
+        <a href="#" class="navbar-brand">Hitz</a>
+        <ul class="nav navbar-nav">
+          <li>
+            <a href="#">Home</a>
+          </li>
+          <li class="active">
+            <a href="#">Stats</a>
+          </li>
+          <li>
+            <a href="#">Games</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="row">
+  <div class="col-12 col-lg-8">Rival</div>
+  <div class="col-6 col-lg-4 text-right">${rival}</div>
+</div>
+<div class="row">
+  <div class="col-12 col-lg-8">BFF</div>
+  <div class="col-6 col-lg-4 text-right">${bff}</div>
+</div>
+<div class="row">
+  <div class="col-12 col-lg-6">Best Team</div>
+  <div class="col-6 col-lg-6 text-right">${bestTeam}</div>
+</div>
+%if upcomingGames!=0:
+<div class="row">
+  <div class="col-12 col-lg-4">Upcoming:</div>
+  <div class="col-12 col-lg-8 text-right"><table class="table table-striped table-condensed">
+  % for game in upcomingGames:
+  
+  	  <tr class='text-right success ${a.quality}'>${a.away} vs ${a.home}</tr>
+  							  % endfor
+  </table>
+  </div>
+</div>
+%endif
+<div class="row">
+  <div class="col-6 col-lg-4">4</div>
+  <div class="col-6 col-lg-4">4</div>
+  <div class="col-6 col-lg-4">4</div>
+</div>
+<div class="row">
+  <div class="col-6 col-lg-6">6</div>
+  <div class="col-6 col-lg-6">6</div>
+</div>
+    </div>

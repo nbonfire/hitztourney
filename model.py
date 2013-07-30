@@ -53,6 +53,7 @@ class Games(Entity):
     winner = ManyToOne('Teams', inverse = 'winner')
     date = Field(DateTime, default=datetime.datetime.now)
     event = Field(UnicodeText)
+    gameNumber = Field(Integer)
     def __repr__(self):
         return "<Game '%s' %s vs %s, %s won" % (self.date, self.awayteam,self.hometeam,self.winner)
 
