@@ -4,6 +4,7 @@ import datetime
 
 AWAY_TEAM=1
 HOME_TEAM=0
+RESET=0
 
 env=TrueSkill(draw_probability=dynamic_draw_probability)
 
@@ -31,6 +32,7 @@ class Hitters(Entity):
     name = Field(Unicode, unique = True)
     teams = ManyToMany('Teams')
     rating = Field(PickleType, default=env.Rating())
+    lastGamePlayed = Field(DateTime, default=datetime.datetime.datetime(2013,7,1))
  
     #----------------------------------------------------------------------
     def __repr__(self):
@@ -46,12 +48,25 @@ class Teams(Entity):
     gameswon = OneToMany('Games', inverse='winner')
     def __repr__(self):
         return "<Teams '%s' , rating: %s>" % (self.players, self.teamrating)
+    def tupleratings(self):
+        ratings=[]
+        for player in players:
+            ratings.append(player.rating)
+
+        return tuple(ratings)
+    def datelastplayed(self):
+        comparedate=datetime.datetime.today()
+        for player in players:
+            if comparedate > player.lastGamePlayed:
+                comparedate = player.lastGamePlayed
+        return comparedate
+
     
 class Games(Entity):
     hometeam = ManyToOne('Teams', inverse='homegames')
     awayteam = ManyToOne('Teams', inverse='awaygames')
     winner = ManyToOne('Teams', inverse = 'winner')
-    date = Field(DateTime, default=datetime.datetime.now)
+    date = Field(DateTime, default=datetime.datetime.now())
     event = Field(UnicodeText)
     gameNumber = Field(Integer)
     def __repr__(self):
@@ -77,7 +92,12 @@ if __name__ == "__main__":
     setup_all()
     create_all()
     players = ["Adi","Bader","Ced","Gio","James","Jeff","Jesse","Jon","Kent","Koplow","Magoo","Nick","Rosen","Sean","White Rob","Ziplox", 'Drew', 'Crabman'];
-    """games = [
+    for player in players:
+        Hitters.get_by_or_init(name=player)
+    session.commit()
+
+    if RESET==1:
+        games = [
         {'away':['Nick','Ziplox','Ced'],'home':['Rosen','Crabman','Magoo'],'winner':'away'},
         {'away':['Rosen','Ced','Magoo'],'home':['Nick','Ziplox','Crabman'],'winner':'away'}, 
         {'home':['Rosen','Ced','Magoo'],'away':['Nick','Ziplox','Crabman'],'winner':'home'},
@@ -99,37 +119,18 @@ if __name__ == "__main__":
         {'away':['Ziplox','Nick','Drew'],'home':['Rob','Adi','Crabman'],'winner':'home'},              
         {'away':['Ziplox','Rosen','Drew'],'home':['Rob','Adi','Crabman'],'winner':'home'},  
         #{'away':['','',''],'home':['','',''],'winner':''},    
-        ]"""
-    # Adding records
-    for player in players:
-        Hitters.get_by_or_init(name=player)
-    session.commit()
+        ]
+        # Adding records
     
-    """for game in games:
-        
-        homers=get_or_create_team(game['home'])
-        awayers=get_or_create_team(game['away'])
-        winningteam=get_or_create_team(game[game['winner']])
-        print "\n----------\n%s vs %s  " % (awayers, homers)
-        newgame = Games(hometeam=homers, awayteam=awayers, winner=winningteam)
-        if game['winner']=='home':
-            #team rating
-            homers.teamrating,awayers.teamrating = rate_1vs1(homers.teamrating, awayers.teamrating)
-            #individual ratings
-            (awayers.players[0].rating, awayers.players[1].rating, awayers.players[2].rating),(homers.players[0].rating, homers.players[1].rating, homers.players[2].rating) = rate([[awayers.players[0].rating, awayers.players[1].rating, awayers.players[2].rating],[homers.players[0].rating, homers.players[1].rating, homers.players[2].rating]], ranks=[1,0])
+    
+        for game in games:
+            completeGame(game['home'],game['away'],game['winner'])
             
-        else:
-            #team ratings
-            awayers.teamrating,homers.teamrating = rate_1vs1(awayers.teamrating, homers.teamrating)
-            #individual ratings
-            (awayers.players[0].rating, awayers.players[1].rating, awayers.players[2].rating),(homers.players[0].rating, homers.players[1].rating, homers.players[2].rating) = rate([[awayers.players[0].rating, awayers.players[1].rating, awayers.players[2].rating],[homers.players[0].rating, homers.players[1].rating, homers.players[2].rating]], ranks=[0,1])
             
-        print newgame
-        print homers.teamrating
-        print awayers.teamrating
-        session.commit()
+            
+            
 
-    """
+    
         #thisgame = Games.get_by_or_init(hometeam=homers, awayteam=awayers, winner=game['winner'], date=datetime.datetime.now)
     # --------------------------------------------------
     # Simple Queries
