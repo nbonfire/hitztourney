@@ -84,7 +84,72 @@ def get_or_create_team(findplayers):
             session.commit()
     return createam
         
-        
+def generateGamePermutations(listOfPlayers):
+    # 
+    # output should be a list of games [{'home':team,'away':team, 'strength':float}] randomized, then sorted by strength
+    #
+    potentialGames=[]
+    # first get a list of the potential combinations of 6 players
+    """
+    for potentialmatchups in list(itertools.combinations(listOfPlayers,6):
+        for match in potentialmatchups:
+            for a in range(len(match)/2):
+                homeTeam=match[a]
+                awayTeam=match[len(match)-a-1]
+                potentialGames.append({'home': match[a],'away':match[len(match)-a-1]}, 'strength':getStrength(homeTuple=homeTeam,awayTuple=awayTeam), 'sigma':getTeamSigma())
+    """
+
+    players = set(listOfPlayers)
+    complete = set()
+    for home in itertools.combinations(players, 3):
+        complete.add(home[0])
+        remaining_players = players - set(home) - complete
+        for away in itertools.combinations(remaining_players, 3):
+            potentialGames.append( {'home':home, 'away':away, 'strength':getStrength(homeTuple=homeTeam,awayTuple=awayTeam)}, 'lastPlayed':getLastPlayed(homeTuple=homeTeam,awayTuple=awayTeam))
+    potentialGames.sort(key = lambda game: game['strength'] )
+    return potentialGames
+
+def getStrength(homeNames,awayNames):
+    #
+    # ({'name':'alice','rating':2.0},{'name':'bob','rating':1.4},{'name':'charlie','rating':3.2})
+    #
+    homeTeam=get_or_create_team(homeTeam)
+    awayTeam=get_or_create_team(awayTeam)
+    homeRatings = homeTeam.tupleratings()
+    awayRatings = awayTeam.tupleratings()
+    return env.quality([homeRatings,awayRatings])
+def getLastPlayed(homeNames,awayNames):
+    #
+    # ({'name':'alice','rating':2.0},{'name':'bob','rating':1.4},{'name':'charlie','rating':3.2})
+    #
+    homeTeam=get_or_create_team(homeTeam)
+    awayTeam=get_or_create_team(awayTeam)
+    homeDate = homeTeam.tupleratings()
+    awayRatings = awayTeam.tupleratings()
+    return env.quality([homeRatings,awayRatings])
+
+def completeGame(homeTeam,awayTeam,winner,datePlayed=datetime.datetime.today()):
+    homers=get_or_create_team(homeTeam)
+    awayers=get_or_create_team(awayTeam)
+    
+
+    print "\n----------\n%s vs %s  " % (awayers, homers)
+    
+    if winner=='home':
+        winningteam=get_or_create_team(homeTeam)
+        #team rating
+        homers.teamrating,awayers.teamrating = rate_1vs1(homers.teamrating, awayers.teamrating)
+        #individual ratings
+        (awayers.players[0].rating, awayers.players[1].rating, awayers.players[2].rating),(homers.players[0].rating, homers.players[1].rating, homers.players[2].rating) = rate([[awayers.players[0].rating, awayers.players[1].rating, awayers.players[2].rating],[homers.players[0].rating, homers.players[1].rating, homers.players[2].rating]], ranks=[1,0])
+            
+    else:
+        winningteam=get_or_create_team(awayTeam)
+        #team ratings
+        awayers.teamrating,homers.teamrating = rate_1vs1(awayers.teamrating, homers.teamrating)
+        #individual ratings
+        (awayers.players[0].rating, awayers.players[1].rating, awayers.players[2].rating),(homers.players[0].rating, homers.players[1].rating, homers.players[2].rating) = rate([[awayers.players[0].rating, awayers.players[1].rating, awayers.players[2].rating],[homers.players[0].rating, homers.players[1].rating, homers.players[2].rating]], ranks=[0,1])
+    newgame = Games(hometeam=homers, awayteam=awayers, winner=winningteam,date=datePlayed)
+    session.commit()
 
  
 if __name__ == "__main__":
