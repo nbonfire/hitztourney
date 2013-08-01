@@ -1,12 +1,26 @@
+import itertools
 from elixir import *
 from trueskill import *
 import datetime
+from sortedcollection import SortedCollection
+from sys import stdout
+import win32api,win32console
 
 AWAY_TEAM=1
 HOME_TEAM=0
-RESET=0
+RESET=0 #requires you to delete the db before running
 
 env=TrueSkill(draw_probability=dynamic_draw_probability)
+
+def cls():
+     "Clear console screen"
+     TopLeft = win32console.PyCOORDType(0,0)
+     csb = win32console.GetStdHandle(win32api.STD_OUTPUT_HANDLE)
+     csbi = csb.GetConsoleScreenBufferInfo()
+     size = csbi['Size'].X * csbi['Size'].Y;
+     csb.FillConsoleOutputCharacter(u' ', size, TopLeft)
+     csb.FillConsoleOutputAttribute(csbi['Attributes'], size, TopLeft);
+     csb.SetConsoleCursorPosition(TopLeft)
 
 def get_by_or_init(cls, if_new_set={}, **params):
     """Call get_by; if no object is returned, initialize an object
@@ -32,7 +46,7 @@ class Hitters(Entity):
     name = Field(Unicode, unique = True)
     teams = ManyToMany('Teams')
     rating = Field(PickleType, default=env.Rating())
-    lastGamePlayed = Field(DateTime, default=datetime.datetime.datetime(2013,7,1))
+    lastGamePlayed = Field(DateTime, default=datetime.datetime(2013,7,1))
  
     #----------------------------------------------------------------------
     def __repr__(self):
@@ -50,16 +64,23 @@ class Teams(Entity):
         return "<Teams '%s' , rating: %s>" % (self.players, self.teamrating)
     def tupleratings(self):
         ratings=[]
-        for player in players:
+        for player in self.players:
             ratings.append(player.rating)
 
         return tuple(ratings)
-    def datelastplayed(self):
+    def setdatelastplayed(self, datePlayed=datetime.datetime.today()):
+        
+        for player in self.players:
+            if datePlayed > player.lastGamePlayed:
+                player.lastGamePlayed =datePlayed
+        
+    def getdatelastplayed(self):
         comparedate=datetime.datetime.today()
-        for player in players:
-            if comparedate > player.lastGamePlayed:
-                comparedate = player.lastGamePlayed
+        for player in self.players:
+            if player.lastGamePlayed < comparedate:
+                comparedate=player.lastGamePlayed
         return comparedate
+
 
     
 class Games(Entity):
@@ -71,6 +92,7 @@ class Games(Entity):
     gameNumber = Field(Integer)
     def __repr__(self):
         return "<Game '%s' %s vs %s, %s won" % (self.date, self.awayteam,self.hometeam,self.winner)
+
 
 def get_or_create_team(findplayers):
     #first check if a team exists
@@ -84,11 +106,12 @@ def get_or_create_team(findplayers):
             session.commit()
     return createam
         
-def generateGamePermutations(listOfPlayers):
+def generateGamePermutations(listOfPlayers, numberOfGames=10):
     # 
     # output should be a list of games [{'home':team,'away':team, 'strength':float}] randomized, then sorted by strength
     #
     potentialGames=[]
+    potentialGamesCollection=SortedCollection(key=lambda item:-item['strength'])
     # first get a list of the potential combinations of 6 players
     """
     for potentialmatchups in list(itertools.combinations(listOfPlayers,6):
@@ -101,20 +124,33 @@ def generateGamePermutations(listOfPlayers):
 
     players = set(listOfPlayers)
     complete = set()
+    begintime=datetime.datetime.now()
+    lastdisplay=begintime #when was the last time we printed the results?
     for home in itertools.combinations(players, 3):
         complete.add(home[0])
         remaining_players = players - set(home) - complete
         for away in itertools.combinations(remaining_players, 3):
-            potentialGames.append( {'home':home, 'away':away, 'strength':getStrength(homeTuple=homeTeam,awayTuple=awayTeam)}, 'lastPlayed':getLastPlayed(homeTuple=homeTeam,awayTuple=awayTeam))
-    potentialGames.sort(key = lambda game: game['strength'] )
-    return potentialGames
+            potentialGamesCollection.insert({'home':home, 'away':away, 'strength':getStrength(homeNames=home,awayNames=away), 'lastPlayed':getLastPlayed(homeNames=home,awayNames=away)})
+            #potentialGames.append( {'home':home, 'away':away, 'strength':getStrength(homeNames=home,awayNames=away), 'lastPlayed':getLastPlayed(homeNames=home,awayNames=away)})
+            if len(potentialGamesCollection)>numberOfGames:
+                potentialGamesCollection.removebyindex(numberOfGames)
+            
+            timenow=datetime.datetime.now()
+            difference=timenow-lastdisplay
+            if difference.total_seconds()>2:
+                cls()
+                print list(potentialGamesCollection)
+                lastdisplay=timenow
+
+    print 'Elapsed Time: %s seconds' % str((lastdisplay-timenow).total_seconds)
+    return potentialGamesCollection
 
 def getStrength(homeNames,awayNames):
     #
     # ({'name':'alice','rating':2.0},{'name':'bob','rating':1.4},{'name':'charlie','rating':3.2})
     #
-    homeTeam=get_or_create_team(homeTeam)
-    awayTeam=get_or_create_team(awayTeam)
+    homeTeam=get_or_create_team(homeNames)
+    awayTeam=get_or_create_team(awayNames)
     homeRatings = homeTeam.tupleratings()
     awayRatings = awayTeam.tupleratings()
     return env.quality([homeRatings,awayRatings])
@@ -122,16 +158,20 @@ def getLastPlayed(homeNames,awayNames):
     #
     # ({'name':'alice','rating':2.0},{'name':'bob','rating':1.4},{'name':'charlie','rating':3.2})
     #
-    homeTeam=get_or_create_team(homeTeam)
-    awayTeam=get_or_create_team(awayTeam)
-    homeDate = homeTeam.tupleratings()
-    awayRatings = awayTeam.tupleratings()
-    return env.quality([homeRatings,awayRatings])
+    homeTeam=get_or_create_team(homeNames)
+    awayTeam=get_or_create_team(awayNames)
+    homeDate = homeTeam.getdatelastplayed()
+    awayDate = awayTeam.getdatelastplayed()
+    if homeDate<awayDate:
+        return homeDate
+    else:
+        return awayDate
 
 def completeGame(homeTeam,awayTeam,winner,datePlayed=datetime.datetime.today()):
     homers=get_or_create_team(homeTeam)
     awayers=get_or_create_team(awayTeam)
-    
+    homers.setdatelastplayed(datePlayed)
+    awayers.setdatelastplayed(datePlayed)
 
     print "\n----------\n%s vs %s  " % (awayers, homers)
     
@@ -163,33 +203,33 @@ if __name__ == "__main__":
 
     if RESET==1:
         games = [
-        {'away':['Nick','Ziplox','Ced'],'home':['Rosen','Crabman','Magoo'],'winner':'away'},
-        {'away':['Rosen','Ced','Magoo'],'home':['Nick','Ziplox','Crabman'],'winner':'away'}, 
-        {'home':['Rosen','Ced','Magoo'],'away':['Nick','Ziplox','Crabman'],'winner':'home'},
-        {'away':['Ziplox','Magoo','Nick'],'home':['Ced','Crabman','Rosen'],'winner':'away'},
-        {'away':['Ziplox','Rosen','Ced'],'home':['Nick','Magoo','Crabman'],'winner':'away'}, 
-        {'home':['Ziplox','Rosen','Ced'],'away':['Nick','Magoo','Crabman'],'winner':'home'},
-        {'home':['Ziplox','Rosen','Ced'],'away':['Nick','Magoo','Crabman'],'winner':'home'},
-        {'away':['Magoo','Crabman','Rosen'],'home':['Ziplox','Ced','Nick'],'winner':'home'},
-        {'home':['Ziplox','Rosen','Adi'],'away':['Crabman','Drew','Rob'],'winner':'home'},
-        {'away':['Ziplox','Nick','Adi'],'home':['Crabman','Drew','Rob'],'winner':'away'},
-        {'away':['Rosen','Crabman','Rob'],'home':['Ziplox','Nick','Adi'],'winner':'home'},
-        {'away':['Rosen','Rob','Adi'],'home':['Ziplox','Nick','Drew'],'winner':'home'},      
-        {'away':['Rosen','Rob','Crabman'],'home':['Ziplox','Nick','Drew'],'winner':'home'},
-        {'away':['Drew','Adi','Crabman'],'home':['Rosen','Nick','Ziplox'],'winner':'away'},
-        {'away':['Nick','Rob','Rosen'],'home':['Drew','Adi','Crabman'],'winner':'home'},
-        {'away':['Ziplox','Rob','Rosen'],'home':['Drew','Adi','Crabman'],'winner':'away'},
-        {'away':['Rob','Drew','Adi'],'home':['Ziplox','Nick','Rosen'],'winner':'home'},
-        {'away':['Rob','Crabman','Adi'],'home':['Ziplox','Nick','Rosen'],'winner':'away'},
-        {'away':['Ziplox','Nick','Drew'],'home':['Rob','Adi','Crabman'],'winner':'home'},              
-        {'away':['Ziplox','Rosen','Drew'],'home':['Rob','Adi','Crabman'],'winner':'home'},  
+        {'away':['Nick','Ziplox','Ced'],'home':['Rosen','Crabman','Magoo'],'winner':'away', 'date':datetime.datetime(2013,7,13)},
+        {'away':['Rosen','Ced','Magoo'],'home':['Nick','Ziplox','Crabman'],'winner':'away', 'date':datetime.datetime(2013,7,13)}, 
+        {'home':['Rosen','Ced','Magoo'],'away':['Nick','Ziplox','Crabman'],'winner':'home', 'date':datetime.datetime(2013,7,13)},
+        {'away':['Ziplox','Magoo','Nick'],'home':['Ced','Crabman','Rosen'],'winner':'away', 'date':datetime.datetime(2013,7,13)},
+        {'away':['Ziplox','Rosen','Ced'],'home':['Nick','Magoo','Crabman'],'winner':'away', 'date':datetime.datetime(2013,7,13)}, 
+        {'home':['Ziplox','Rosen','Ced'],'away':['Nick','Magoo','Crabman'],'winner':'home', 'date':datetime.datetime(2013,7,13)},
+        {'home':['Ziplox','Rosen','Ced'],'away':['Nick','Magoo','Crabman'],'winner':'home', 'date':datetime.datetime(2013,7,13)},
+        {'away':['Magoo','Crabman','Rosen'],'home':['Ziplox','Ced','Nick'],'winner':'home', 'date':datetime.datetime(2013,7,13)},
+        {'home':['Ziplox','Rosen','Adi'],'away':['Crabman','Drew','Rob'],'winner':'home', 'date':datetime.datetime(2013,7,27)},
+        {'away':['Ziplox','Nick','Adi'],'home':['Crabman','Drew','Rob'],'winner':'away', 'date':datetime.datetime(2013,7,27)},
+        {'away':['Rosen','Crabman','Rob'],'home':['Ziplox','Nick','Adi'],'winner':'home', 'date':datetime.datetime(2013,7,27)},
+        {'away':['Rosen','Rob','Adi'],'home':['Ziplox','Nick','Drew'],'winner':'home', 'date':datetime.datetime(2013,7,27)},      
+        {'away':['Rosen','Rob','Crabman'],'home':['Ziplox','Nick','Drew'],'winner':'home', 'date':datetime.datetime(2013,7,27)},
+        {'away':['Drew','Adi','Crabman'],'home':['Rosen','Nick','Ziplox'],'winner':'away', 'date':datetime.datetime(2013,7,27)},
+        {'away':['Nick','Rob','Rosen'],'home':['Drew','Adi','Crabman'],'winner':'home', 'date':datetime.datetime(2013,7,27)},
+        {'away':['Ziplox','Rob','Rosen'],'home':['Drew','Adi','Crabman'],'winner':'away', 'date':datetime.datetime(2013,7,27)},
+        {'away':['Rob','Drew','Adi'],'home':['Ziplox','Nick','Rosen'],'winner':'home', 'date':datetime.datetime(2013,7,27)},
+        {'away':['Rob','Crabman','Adi'],'home':['Ziplox','Nick','Rosen'],'winner':'away', 'date':datetime.datetime(2013,7,27)},
+        {'away':['Ziplox','Nick','Drew'],'home':['Rob','Adi','Crabman'],'winner':'home', 'date':datetime.datetime(2013,7,27)},              
+        {'away':['Ziplox','Rosen','Drew'],'home':['Rob','Adi','Crabman'],'winner':'home', 'date':datetime.datetime(2013,7,27)},  
         #{'away':['','',''],'home':['','',''],'winner':''},    
         ]
         # Adding records
     
     
         for game in games:
-            completeGame(game['home'],game['away'],game['winner'])
+            completeGame(game['home'],game['away'],game['winner'], game['date'])
             
             
             
@@ -227,7 +267,9 @@ if __name__ == "__main__":
     qry = Hitters.query.filter_by(name=u'Nick')
     record = qry.first()
     print "%s" % (record.rating.sigma)
- 
+    collectionOfGames= generateGamePermutations([i.name for i in recordsbelowsigma], 20)
+    cls()
+    print list(collectionOfGames)
     # delete the record
     #record.delete()
     #session.commit()
