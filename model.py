@@ -1,149 +1,119 @@
-import itertools
-from elixir import *
-from trueskill import *
-import datetime
-from sortedcollection import SortedCollection
-from sys import stdout
-import win32api,win32console
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import ForeignKey, Table, Text
+from sqlalchemy.orm import relationship, backref
 
-AWAY_TEAM=1
-HOME_TEAM=0
-RESET=0 #requires you to delete the db before running
+RESET=1
 
-env=TrueSkill(draw_probability=dynamic_draw_probability)
+Base = declarative_base()
+engine = create_engine('sqlite:///hitz.sqlite')
+Base.metadata.create_all(engine)
 
-def cls():
-     "Clear console screen"
-     TopLeft = win32console.PyCOORDType(0,0)
-     csb = win32console.GetStdHandle(win32api.STD_OUTPUT_HANDLE)
-     csbi = csb.GetConsoleScreenBufferInfo()
-     size = csbi['Size'].X * csbi['Size'].Y;
-     csb.FillConsoleOutputCharacter(u' ', size, TopLeft)
-     csb.FillConsoleOutputAttribute(csbi['Attributes'], size, TopLeft);
-     csb.SetConsoleCursorPosition(TopLeft)
+class Hitter(Base):
+	__tablename__='hitters'
+	id = Column(Integer, primary_key=True)
+	name = Column(String, unique=True)
+	#teams = relationship("Team", backref="hitter")
+	rating = Column(PickleType)
+	lastGamePlayed = Column(DateTime)
+	def __init__(self, name,lastGamePlayed = datetime.datetime(2013,7,1),rating = env.Rating()):
+		self.name = name
+		self.lastGamePlayed = lastGamePlayed
+		self.rating = rating
+	def score(self):
+		return (self.rating.mu - 3.0*self.rating.sigma)
 
-def get_by_or_init(cls, if_new_set={}, **params):
-    """Call get_by; if no object is returned, initialize an object
-    with the same parameters. If a new object was created,
-    set any initial values."""
-    result = cls.get_by(**params)
-    if not result:
-        result = cls(**params)
-        result.set(**if_new_set)
-    return result
+hitter_team_table = Table('hitter_team', Base.metadata,
+	Column('team_id', Integer, ForeignKey('teams.id')),
+	Column('hitter_id', Integer, ForeignKey('hitters.id'))
 
-Entity.get_by_or_init = classmethod(get_by_or_init)
+)
 
+class Team(Base):
+	__tablename__='teams'
+	id = Column(Integer,primary_key=True)
+	name=Column(String)
+	teamrating = Column(PickleType)
+	hitters = relationship("Hitter", secondary=hitter_team_table, backref='teams')
 
-metadata.bind = "sqlite:///hitz.sqlite"
-#metadata.bind.echo = True
- 
-########################################################################
-class Hitters(Entity):
-    """
-    Custom made bookmark example
-    """
-    name = Field(Unicode, unique = True)
-    teams = ManyToMany('Teams')
-    rating = Field(PickleType, default=env.Rating())
-    lastGamePlayed = Field(DateTime, default=datetime.datetime(2013,7,1))
- 
-    #----------------------------------------------------------------------
-    def __repr__(self):
-        """"""
-        return "<Hitter '%s' (%s)" % (self.name, self.rating)
+	def __init__(self):
+		self.teamrating = env.Rating()
 
-class Teams(Entity):
-    
-    players = ManyToMany('Hitters')
-    teamrating = Field(PickleType, default=env.Rating())
-    homegames = OneToMany('Games', inverse='hometeam')
-    awaygames = OneToMany('Games', inverse='awayteam')
-    gameswon = OneToMany('Games', inverse='winner')
-    def __repr__(self):
-        return "<Teams '%s' , rating: %s>" % (self.players, self.teamrating)
-    def tupleratings(self):
-        ratings=[]
-        for player in self.players:
-            ratings.append(player.rating)
+	def ratings(self):
+        ratingslist=[]
+        for player in self.hitters:
+            ratingslist.append(player.rating)
 
-        return tuple(ratings)
+        return tuple(ratingslist)
     def setdatelastplayed(self, datePlayed=datetime.datetime.today()):
         
-        for player in self.players:
+        for player in self.hitters:
             if datePlayed > player.lastGamePlayed:
                 player.lastGamePlayed =datePlayed
         
     def getdatelastplayed(self):
         comparedate=datetime.datetime.today()
-        for player in self.players:
+        for player in self.hitters:
             if player.lastGamePlayed < comparedate:
                 comparedate=player.lastGamePlayed
         return comparedate
+		
+
+class Game(Base):
+	__tablename__='games'
+	#hometeam = ManyToOne('Teams', inverse='homegames')
+	hometeam = relationship("Team", backref=backref('homegames', order_by=id))
+	hometeam_id = Column(Integer, ForeignKey('teams.id'))
+	#awayteam = ManyToOne('Teams', inverse='awaygames')
+	awayteam = relationship("Team", backref=backref('awaygames', order_by=id))
+	awayteam_id = Column(Integer, ForeignKey('teams.id'))
+	#winner = ManyToOne('Teams', inverse = 'winner')
+	winner = relationship('Team', backref=backref('winninggames', order_by=id))
+	winner_id = Column(Integer, ForeignKey('teams.id'))
+
+	#date = Field(DateTime, default=datetime.datetime.now())
+	date = Column(DateTime)
+	#event = Field(UnicodeText)
+	event = Column(String)
+	#gameNumber = Field(Integer)
+	gameNumber = Column(Integer)
+	def __init__(self, hometeam, awayteam, winner, date = datetime.datetime.now() ):
+		self.date = date
+		self.hometeam = hometeam
+		self.awayteam = awayteam
+		self.winner = winner
 
 
+
+def get_or_create(session, model, **kwargs):
+	instance = session.query(model).filter_by(**kwargs).first()
+	if instance:
+		return instance
+	else:
+		instance = model(**kwargs)
+		return instance
+	# myHitter = get_or_create(session, Hitter, name=hitterName)
+def get_or_create_team(session, findplayers):
+	create_team = session.query(Team).filter(Team.players.any(Hitter.name=findplayers[0])).filter(Team.players.any(Hitter.name=findplayers[1])).filter(Team.players.any(Hitter.name=findplayers[2]))
+
+	if not create_team:
+		create_team = Team()
+		for newplayer in findplayers:
+			create_team.hitters.append(get_or_create(session,Hitter,name=newplayer))
+		session.commit()
+	return create_team
+
+def getRecordsBelowSigma(sigma=SIGMA_CUTOFF):
+    records = session.query(Hitters).all()
+    recordsbelowsigma = []
+    #for record in records:
+        #print "-" * 20
+        #print record.name
     
-class Games(Entity):
-    hometeam = ManyToOne('Teams', inverse='homegames')
-    awayteam = ManyToOne('Teams', inverse='awaygames')
-    winner = ManyToOne('Teams', inverse = 'winner')
-    date = Field(DateTime, default=datetime.datetime.now())
-    event = Field(UnicodeText)
-    gameNumber = Field(Integer)
-    def __repr__(self):
-        return "<Game '%s' %s vs %s, %s won" % (self.date, self.awayteam,self.hometeam,self.winner)
-
-
-def get_or_create_team(findplayers):
-    #first check if a team exists
-
-    createam=Teams.query.filter(Teams.players.any(name=findplayers[0])).filter(Teams.players.any(name=findplayers[1])).filter(Teams.players.any(name=findplayers[2])).first()
-    #if it doesn't exist, create it
-    if not createam:
-            createam = Teams()
-            for newplayer in findplayers:
-                createam.players.append(Hitters.get_by_or_init(name=newplayer))
-            session.commit()
-    return createam
-        
-def generateGamePermutations(listOfPlayers, numberOfGames=10):
-    # 
-    # output should be a list of games [{'home':team,'away':team, 'strength':float}] randomized, then sorted by strength
-    #
-    potentialGames=[]
-    potentialGamesCollection=SortedCollection(key=lambda item:-item['strength'])
-    # first get a list of the potential combinations of 6 players
-    """
-    for potentialmatchups in list(itertools.combinations(listOfPlayers,6):
-        for match in potentialmatchups:
-            for a in range(len(match)/2):
-                homeTeam=match[a]
-                awayTeam=match[len(match)-a-1]
-                potentialGames.append({'home': match[a],'away':match[len(match)-a-1]}, 'strength':getStrength(homeTuple=homeTeam,awayTuple=awayTeam), 'sigma':getTeamSigma())
-    """
-
-    players = set(listOfPlayers)
-    complete = set()
-    begintime=datetime.datetime.now()
-    lastdisplay=begintime #when was the last time we printed the results?
-    for home in itertools.combinations(players, 3):
-        complete.add(home[0])
-        remaining_players = players - set(home) - complete
-        for away in itertools.combinations(remaining_players, 3):
-            potentialGamesCollection.insert({'home':home, 'away':away, 'strength':getStrength(homeNames=home,awayNames=away), 'lastPlayed':getLastPlayed(homeNames=home,awayNames=away)})
-            #potentialGames.append( {'home':home, 'away':away, 'strength':getStrength(homeNames=home,awayNames=away), 'lastPlayed':getLastPlayed(homeNames=home,awayNames=away)})
-            if len(potentialGamesCollection)>numberOfGames:
-                potentialGamesCollection.removebyindex(numberOfGames)
-            
-            timenow=datetime.datetime.now()
-            difference=timenow-lastdisplay
-            if difference.total_seconds()>2:
-                cls()
-                print list(potentialGamesCollection)
-                lastdisplay=timenow
-
-    print 'Elapsed Time: %s seconds' % str((lastdisplay-timenow).total_seconds)
-    return potentialGamesCollection
+    for record in records:
+        if record.rating.sigma < sigma:
+            recordsbelowsigma.append(record)
+    recordsbelowsigma.sort(key=lambda player: player.rating.score())
+    return recordsbelowsigma
 
 def getStrength(homeNames,awayNames):
     #
@@ -154,6 +124,7 @@ def getStrength(homeNames,awayNames):
     homeRatings = homeTeam.tupleratings()
     awayRatings = awayTeam.tupleratings()
     return env.quality([homeRatings,awayRatings])
+
 def getLastPlayed(homeNames,awayNames):
     #
     # ({'name':'alice','rating':2.0},{'name':'bob','rating':1.4},{'name':'charlie','rating':3.2})
@@ -191,14 +162,28 @@ def completeGame(homeTeam,awayTeam,winner,datePlayed=datetime.datetime.today()):
     newgame = Games(hometeam=homers, awayteam=awayers, winner=winningteam,date=datePlayed)
     session.commit()
 
- 
+def getPlayersForTemplate(checkedPlayers):
+	players = session.query(Hitter).all()
+	names = []
+	#defined in matchups.py
+	#defaultPlayers = ['Nick', 'Ziplox', 'Rosen', 'Magoo', 'Ced', 'White Rob', 'Adi']
+	for player in players:
+		if player.name in defaultPlayers:
+			isChecked=True
+		else:
+			isChecked = False
+		names.append({'name':player.name, 'isChecked': isChecked} )
+	return names
+
 if __name__ == "__main__":
-    from elixir import create_all, setup_all, session
-    setup_all()
-    create_all()
+    
+    #setup_all()
+    #create_all()
+    hitters=[]
     players = ["Adi","Bader","Ced","Gio","James","Jeff","Jesse","Jon","Kent","Koplow","Magoo","Nick","Rosen","Sean","White Rob","Ziplox", 'Drew', 'Crabman'];
     for player in players:
-        Hitters.get_by_or_init(name=player)
+        #Hitters.get_by_or_init(name=player)
+        hitters.append(get_or_create(session, Hitter, name=player))
     session.commit()
 
     if RESET==1:
@@ -242,7 +227,7 @@ if __name__ == "__main__":
  
     # get all the records
     #records = Hitters.query.filter(Hitters.rating.sigma<8.0).all()
-    records = Hitters.query.all()
+    records = session.query(Hitter).all()
     recordsbelowsigma = []
     #for record in records:
         #print "-" * 20
@@ -256,7 +241,7 @@ if __name__ == "__main__":
 
     recordsbelowsigma.sort(key=lambda player: player.rating.mu)
     print "\n\n\n%s\n\n\n" % recordsbelowsigma
-    allteams=Teams.query.all()
+    allteams=session.query(Team).all()
     #for allteam in allteams:
         #print "-" * 20
         #print allteam.players
@@ -264,12 +249,13 @@ if __name__ == "__main__":
     print allteams
  
     # find a specific record
-    qry = Hitters.query.filter_by(name=u'Nick')
+
+    qry = session.query(Hitters).filter_by(name=u'Nick')
     record = qry.first()
     print "%s" % (record.rating.sigma)
-    collectionOfGames= generateGamePermutations([i.name for i in recordsbelowsigma], 20)
-    cls()
-    print list(collectionOfGames)
+    #collectionOfGames= generateGamePermutations([i.name for i in recordsbelowsigma], 20)
+    #cls()
+    #print list(collectionOfGames)
     # delete the record
     #record.delete()
     #session.commit()

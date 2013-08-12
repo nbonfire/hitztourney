@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<!-- 
+
+guessgames.html
+
+game template.
+
+Required:
+
+(list) topGames : {'home':'Nick, Ziplox, Rosen', 'away': 'Adi, White Rob, Ced', 'strength':81.07}
+
+(list) players: {'name': 'Nick', 'isChecked': True}
+
+
+-->
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<title>Quality HITZ Games</title>
+	<link rel="shortcut icon" href="demos/images/favicon.ico" type="image/x-icon">
+	<link rel="apple-touch-icon" href="demos/images/apple-touch-icon.png">
+   
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css">
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
+    <script type="text/javascript" src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
+    <script src="js/stats.js"></script>
+
+    <script type="text/javascript">
+    $(function(){
+    	var server = new ServerEventsDispatcher();
+    	server.bind('top10games', function(evt){
+    		var table = document.getElementByID("top10gamestable");
+    		var tbody = table.getElementsByTagName("tbody")[0];
+    		var rows = tbody.getElementsByTagName("tr");
+
+    		function populateRow(index, data )
+    		{
+    			var row = rows[index];
+    			var cells = row.getElementsByTagName("td")
+    			var awayTeamCell = cells[1];
+    			var homeTeamCell = cells[3];
+    			var strengthCell = cells[4];
+    			$(awayTeamCell).html(data['away']);
+    			$(homeTeamCell).html(data['home']);
+    			$(strengthCell).html(data['strength']);
+
+    		}
+    		
+
+    		for(i=0;i<evt.data.length;i++){
+    			populateRow(i, evt.data['games'][i], True)
+    		}
+    		$("#working").html = evt.data['isdone']
+
+  		});
+  		
+  		function recalculate() {
+  			var form = document.getElementByID("names")
+  			var names = form.getElementsByTagName("input")
+  			server.trigger('gettop10games', names)
+  		}
+    })
+    </script>
+
+    <body>
+    <div class="navbar">
+        <a href="#" class="navbar-brand">Hitz</a>
+        <ul class="nav navbar-nav">
+          <li>
+            <a href="#">Home</a>
+          </li>
+          <li >
+            <a href="#">Stats</a>
+          </li>
+          <li class="active">
+            <a href="#">Games</a>
+          </li>
+        </ul>
+    </div>
+
+    <div class="container">
+    <div class="row">
+    <div class="span8">
+      <table id="top10gamestable">
+      <thead>
+      
+      </thead>
+      <tbody>
+      % for game in topGames:
+  
+  	  <tr><td><span class="awayTeam">${game['away']}</span> vs <span class="homeTeam">${game['home']}</span></td><td><span class="strength">${game['strength']}</span>%</td></tr>
+  	  % endfor
+      
+      </tbody>
+      </table>
+    </div>
+    <div class="span4">
+    <!--   insert multi-select box of players and an update button here-->
+    <form id="names">
+    	<fieldset>
+    		<legend>Choose Players</legend>
+    		<label id="#working"></label>
+    		<!--<select multiple="multiple">
+    		%% for player in players:
+    		<option>${player.name}</option>
+    		%% endfor
+    		</select> -->
+    		% for player in players:
+    		<label class="checkbox">
+    		<input type="checkbox" value=" ${player['name']} " ${player['ischecked']}> <a href="playerstats/${player['name']}">${player['name']}</a>
+    		</label>
+    		<div class="form-actions">
+    		<a type="submit" class="btn" href="javascript:recalculate()">Submit</a>
+    		</div>
+
+    	</fieldset>
+    </form>
+    </div>
+    </div>
+
+
+    </body>
