@@ -25,6 +25,9 @@ class Publisher(WebSocket):
 
     def closed(self, code, reason=None):
         SUBSCRIBERS.remove(self)
+    def received_message(self, message):
+    	#
+    	#
 
 rootDir = os.path.abspath("/Users/nickb/Projects/hitztourney/")
 
