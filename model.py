@@ -7,7 +7,7 @@ from trueskill import *
 
 env=TrueSkill(draw_probability=dynamic_draw_probability)
 
-RESET=1
+RESET=0
 SIGMA_CUTOFF=8.0
 
 Base = declarative_base()
@@ -29,8 +29,10 @@ class Hitter(Base):
 		self.name = name
 		self.lastGamePlayed = lastGamePlayed
 		self.rating = rating
-	def score(self):
+	def hitzskill(self):
 		return (self.rating.mu - 3.0*self.rating.sigma)
+	def __repr__(self):
+		return "<%s, %s, %s>" % (self.name, self.lastGamePlayed, str(self.rating.mu - 3.0*self.rating.sigma))
 
 hitter_team_table = Table('hitter_team', Base.metadata,
 	Column('team_id', Integer, ForeignKey('teams.id')),
@@ -47,8 +49,10 @@ class Team(Base):
 
 	def __init__(self):
 		self.teamrating = env.Rating()
+	def __repr__(self):
+		return "<%s, %s, %s last played: %s team rating: %s>" % (self.hitters[0].name, self.hitters[1].name, self.hitters[2].name, self.getdatelastplayed(),str(self.teamrating.mu - 3.0*self.teamrating.sigma))
 
-	def ratings(self):
+	def tupleratings(self):
 		ratingslist=[]
 		for player in self.hitters:
 			ratingslist.append(player.rating)
@@ -66,6 +70,8 @@ class Team(Base):
 			if player.lastGamePlayed < comparedate:
 				comparedate=player.lastGamePlayed
 		return comparedate
+	def names(self):
+		return "%s, %s, %s"% (self.hitters[0].name, self.hitters[1].name, self.hitters[2].name)
 		
 
 class Game(Base):
@@ -73,15 +79,24 @@ class Game(Base):
 	id = Column(Integer, primary_key=True)
 	#hometeam = ManyToOne('Teams', inverse='homegames')
 	hometeam_id = Column(Integer, ForeignKey('teams.id'))
-	hometeam = relationship("Team", backref=backref('homegames', order_by=id))
+	hometeam = relationship("Team",
+		primaryjoin=('games.c.hometeam_id==teams.c.id'),
+		remote_side='Team.id',
+		backref=backref('homegames', order_by=id))
 	
 	#awayteam = ManyToOne('Teams', inverse='awaygames')
 	awayteam_id = Column(Integer, ForeignKey('teams.id'))
-	awayteam = relationship("Team", backref=backref('awaygames', order_by=id))
+	awayteam = relationship("Team", 
+		primaryjoin=('games.c.awayteam_id==teams.c.id'),
+		remote_side='Team.id',
+		backref=backref('awaygames', order_by=id))
 	
 	#winner = ManyToOne('Teams', inverse = 'winner')
 	winner_id = Column(Integer, ForeignKey('teams.id'))
-	winner = relationship('Team', backref=backref('winninggames', order_by=id))
+	winner = relationship('Team',
+		primaryjoin=('games.c.winner_id==teams.c.id'),
+		remote_side='Team.id', 
+		backref=backref('winninggames', order_by=id))
 	
 
 	#date = Field(DateTime, default=datetime.datetime.now())
@@ -95,6 +110,14 @@ class Game(Base):
 		self.hometeam = hometeam
 		self.awayteam = awayteam
 		self.winner = winner
+	def winposition(self):
+		if self.winner_id == self.hometeam_id:
+			return "home"
+		elif self.winner_id == self.awayteam_id:
+			return "away"
+		else:
+			return "can't tell - winner: %s, home: %s, away: %s, names: %s" % (self.winner_id, self.hometeam_id, self.awayteam_id, self.winner.names())
+
 
 
 
@@ -107,8 +130,8 @@ def get_or_create(session, model, **kwargs):
 		session.add(instance)
 		return instance
 	# myHitter = get_or_create(session, Hitter, name=hitterName)
-def get_or_create_team(session, findplayers):
-	create_team = session.query(Team).filter(Team.players.any(Hitter.name==findplayers[0])).filter(Team.players.any(Hitter.name==findplayers[1])).filter(Team.players.any(Hitter.name==findplayers[2]))
+def get_or_create_team(findplayers):
+	create_team = session.query(Team).filter(Team.hitters.any(Hitter.name==findplayers[0])).filter(Team.hitters.any(Hitter.name==findplayers[1])).filter(Team.hitters.any(Hitter.name==findplayers[2])).first()
 	#session.query(Team).filter(Team.players.in_()) session.query(Hitter).name.in_(session)
 	if not create_team:
 		create_team = Team()
@@ -119,7 +142,7 @@ def get_or_create_team(session, findplayers):
 	return create_team
 
 def getRecordsBelowSigma(sigma=SIGMA_CUTOFF):
-	records = session.query(Hitters).all()
+	records = session.query(Hitter).all()
 	recordsbelowsigma = []
 	#for record in records:
 		#print "-" * 20
@@ -128,7 +151,7 @@ def getRecordsBelowSigma(sigma=SIGMA_CUTOFF):
 	for record in records:
 		if record.rating.sigma < sigma:
 			recordsbelowsigma.append(record)
-	recordsbelowsigma.sort(key=lambda player: player.rating.score())
+	recordsbelowsigma.sort(key=lambda player: player.rating.hitzskill())
 	return recordsbelowsigma
 
 def getStrength(homeNames,awayNames):
@@ -140,6 +163,16 @@ def getStrength(homeNames,awayNames):
 	homeRatings = homeTeam.tupleratings()
 	awayRatings = awayTeam.tupleratings()
 	return env.quality([homeRatings,awayRatings])
+
+def jsonbackup():
+	results = []
+	allgames = session.query(Game).all()
+
+	for game in allgames:
+		results.append({'away':game.awayteam.listnames(), 'home':game.hometeam.listnames(), 'winner': game.winposition(), 'date': game.date})
+
+	return json.dumps(results)
+
 
 def getLastPlayed(homeNames,awayNames):
 	#
@@ -167,15 +200,15 @@ def completeGame(homeTeam,awayTeam,winner,datePlayed=datetime.datetime.today()):
 		#team rating
 		homers.teamrating,awayers.teamrating = rate_1vs1(homers.teamrating, awayers.teamrating)
 		#individual ratings
-		(awayers.players[0].rating, awayers.players[1].rating, awayers.players[2].rating),(homers.players[0].rating, homers.players[1].rating, homers.players[2].rating) = rate([[awayers.players[0].rating, awayers.players[1].rating, awayers.players[2].rating],[homers.players[0].rating, homers.players[1].rating, homers.players[2].rating]], ranks=[1,0])
+		(awayers.hitters[0].rating, awayers.hitters[1].rating, awayers.hitters[2].rating),(homers.hitters[0].rating, homers.hitters[1].rating, homers.hitters[2].rating) = rate([[awayers.hitters[0].rating, awayers.hitters[1].rating, awayers.hitters[2].rating],[homers.hitters[0].rating, homers.hitters[1].rating, homers.hitters[2].rating]], ranks=[1,0])
 			
 	else:
 		winningteam=get_or_create_team(awayTeam)
 		#team ratings
 		awayers.teamrating,homers.teamrating = rate_1vs1(awayers.teamrating, homers.teamrating)
 		#individual ratings
-		(awayers.players[0].rating, awayers.players[1].rating, awayers.players[2].rating),(homers.players[0].rating, homers.players[1].rating, homers.players[2].rating) = rate([[awayers.players[0].rating, awayers.players[1].rating, awayers.players[2].rating],[homers.players[0].rating, homers.players[1].rating, homers.players[2].rating]], ranks=[0,1])
-	newgame = Games(hometeam=homers, awayteam=awayers, winner=winningteam,date=datePlayed)
+		(awayers.hitters[0].rating, awayers.hitters[1].rating, awayers.hitters[2].rating),(homers.hitters[0].rating, homers.hitters[1].rating, homers.hitters[2].rating) = rate([[awayers.hitters[0].rating, awayers.hitters[1].rating, awayers.hitters[2].rating],[homers.hitters[0].rating, homers.hitters[1].rating, homers.hitters[2].rating]], ranks=[0,1])
+	newgame = Game(hometeam=homers, awayteam=awayers, winner=winningteam,date=datePlayed)
 	session.commit()
 
 def getPlayersForTemplate(checkedPlayers):
@@ -184,7 +217,7 @@ def getPlayersForTemplate(checkedPlayers):
 	#defined in matchups.py
 	#defaultPlayers = ['Nick', 'Ziplox', 'Rosen', 'Magoo', 'Ced', 'White Rob', 'Adi']
 	for player in players:
-		if player.name in defaultPlayers:
+		if player.name in checkedPlayers:
 			isChecked=True
 		else:
 			isChecked = False
@@ -192,14 +225,14 @@ def getPlayersForTemplate(checkedPlayers):
 	return names
 
 if __name__ == "__main__":
-	
+	Base.metadata.create_all(engine)
 	#setup_all()
 	#create_all()
-	hitters=[]
+	hitlist=[]
 	players = ["Adi","Bader","Ced","Gio","James","Jeff","Jesse","Jon","Kent","Koplow","Magoo","Nick","Rosen","Sean","White Rob","Ziplox", 'Drew', 'Crabman'];
 	for player in players:
 		#Hitters.get_by_or_init(name=player)
-		hitters.append(get_or_create(session, Hitter, name=player))
+		hitlist.append(get_or_create(session, Hitter, name=player))
 	session.commit()
 
 	if RESET==1:
@@ -212,18 +245,18 @@ if __name__ == "__main__":
 		{'home':['Ziplox','Rosen','Ced'],'away':['Nick','Magoo','Crabman'],'winner':'home', 'date':datetime.datetime(2013,7,13)},
 		{'home':['Ziplox','Rosen','Ced'],'away':['Nick','Magoo','Crabman'],'winner':'home', 'date':datetime.datetime(2013,7,13)},
 		{'away':['Magoo','Crabman','Rosen'],'home':['Ziplox','Ced','Nick'],'winner':'home', 'date':datetime.datetime(2013,7,13)},
-		{'home':['Ziplox','Rosen','Adi'],'away':['Crabman','Drew','Rob'],'winner':'home', 'date':datetime.datetime(2013,7,27)},
-		{'away':['Ziplox','Nick','Adi'],'home':['Crabman','Drew','Rob'],'winner':'away', 'date':datetime.datetime(2013,7,27)},
-		{'away':['Rosen','Crabman','Rob'],'home':['Ziplox','Nick','Adi'],'winner':'home', 'date':datetime.datetime(2013,7,27)},
-		{'away':['Rosen','Rob','Adi'],'home':['Ziplox','Nick','Drew'],'winner':'home', 'date':datetime.datetime(2013,7,27)},      
-		{'away':['Rosen','Rob','Crabman'],'home':['Ziplox','Nick','Drew'],'winner':'home', 'date':datetime.datetime(2013,7,27)},
+		{'home':['Ziplox','Rosen','Adi'],'away':['Crabman','Drew','White Rob'],'winner':'home', 'date':datetime.datetime(2013,7,27)},
+		{'away':['Ziplox','Nick','Adi'],'home':['Crabman','Drew','White Rob'],'winner':'away', 'date':datetime.datetime(2013,7,27)},
+		{'away':['Rosen','Crabman','White Rob'],'home':['Ziplox','Nick','Adi'],'winner':'home', 'date':datetime.datetime(2013,7,27)},
+		{'away':['Rosen','White Rob','Adi'],'home':['Ziplox','Nick','Drew'],'winner':'home', 'date':datetime.datetime(2013,7,27)},      
+		{'away':['Rosen','White Rob','Crabman'],'home':['Ziplox','Nick','Drew'],'winner':'home', 'date':datetime.datetime(2013,7,27)},
 		{'away':['Drew','Adi','Crabman'],'home':['Rosen','Nick','Ziplox'],'winner':'away', 'date':datetime.datetime(2013,7,27)},
-		{'away':['Nick','Rob','Rosen'],'home':['Drew','Adi','Crabman'],'winner':'home', 'date':datetime.datetime(2013,7,27)},
-		{'away':['Ziplox','Rob','Rosen'],'home':['Drew','Adi','Crabman'],'winner':'away', 'date':datetime.datetime(2013,7,27)},
-		{'away':['Rob','Drew','Adi'],'home':['Ziplox','Nick','Rosen'],'winner':'home', 'date':datetime.datetime(2013,7,27)},
-		{'away':['Rob','Crabman','Adi'],'home':['Ziplox','Nick','Rosen'],'winner':'away', 'date':datetime.datetime(2013,7,27)},
-		{'away':['Ziplox','Nick','Drew'],'home':['Rob','Adi','Crabman'],'winner':'home', 'date':datetime.datetime(2013,7,27)},              
-		{'away':['Ziplox','Rosen','Drew'],'home':['Rob','Adi','Crabman'],'winner':'home', 'date':datetime.datetime(2013,7,27)},  
+		{'away':['Nick','White Rob','Rosen'],'home':['Drew','Adi','Crabman'],'winner':'home', 'date':datetime.datetime(2013,7,27)},
+		{'away':['Ziplox','White Rob','Rosen'],'home':['Drew','Adi','Crabman'],'winner':'away', 'date':datetime.datetime(2013,7,27)},
+		{'away':['White Rob','Drew','Adi'],'home':['Ziplox','Nick','Rosen'],'winner':'home', 'date':datetime.datetime(2013,7,27)},
+		{'away':['White Rob','Crabman','Adi'],'home':['Ziplox','Nick','Rosen'],'winner':'away', 'date':datetime.datetime(2013,7,27)},
+		{'away':['Ziplox','Nick','Drew'],'home':['White Rob','Adi','Crabman'],'winner':'home', 'date':datetime.datetime(2013,7,27)},              
+		{'away':['Ziplox','Rosen','Drew'],'home':['White Rob','Adi','Crabman'],'winner':'home', 'date':datetime.datetime(2013,7,27)},  
 		#{'away':['','',''],'home':['','',''],'winner':''},    
 		]
 		# Adding records
@@ -252,6 +285,7 @@ if __name__ == "__main__":
 	for record in records:
 		if record.rating.sigma < 8.0:
 			recordsbelowsigma.append(record)
+			print "\n\n %s - %s"% (record.name, str(record.hitzskill()))
 
 
 
@@ -266,9 +300,9 @@ if __name__ == "__main__":
  
 	# find a specific record
 
-	qry = session.query(Hitters).filter_by(name=u'Nick')
+	qry = session.query(Hitter).filter_by(name=u'Nick')
 	record = qry.first()
-	print "%s" % (record.rating.sigma)
+	print "%s" % (record.hitzskill())
 	#collectionOfGames= generateGamePermutations([i.name for i in recordsbelowsigma], 20)
 	#cls()
 	#print list(collectionOfGames)

@@ -24,43 +24,167 @@ Required:
     <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css">
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
     <script type="text/javascript" src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
-    <script src="js/stats.js"></script>
+    <!--script src="http://127.0.0.1:8080/js/eventdispatch.js"></script-->
 
     <script type="text/javascript">
-    $(function(){
-    	var server = new ServerEventsDispatcher();
-    	server.bind('top10games', function(evt){
-    		var table = document.getElementByID("top10gamestable");
-    		var tbody = table.getElementsByTagName("tbody")[0];
-    		var rows = tbody.getElementsByTagName("tr");
+  $(function(){
+    	
+    
+  /*
+        Ismael Celis 2010
+        Simplified WebSocket events dispatcher (no channels, no users)
 
-    		function populateRow(index, data )
-    		{
-    			var row = rows[index];
-    			var cells = row.getElementsByTagName("td")
-    			var awayTeamCell = cells[1];
-    			var homeTeamCell = cells[3];
-    			var strengthCell = cells[4];
-    			$(awayTeamCell).html(data['away']);
-    			$(homeTeamCell).html(data['home']);
-    			$(strengthCell).html(data['strength']);
+        var socket = new ServerEventsDispatcher();
 
-    		}
+        // bind to server events
+        socket.bind('some_event', function(data){
+                alert(data.name + ' says: ' + data.message)
+        });
+
+        // broadcast events to all connected users
+        socket.trigger( 'some_event', {name: 'ismael', message : 'Hello world'} );
+  */
+  var ServerEventsDispatcher = function( ){
+        var loc = window.location, new_uri;
+        if (loc.protocol === "https:") {
+          new_uri = "wss:";
+        } else {
+          new_uri = "ws:";
+        }
+        new_uri += "//" + loc.host; //loc.pathname taken out
+        new_uri += "/ws";
+        var conn = new WebSocket(new_uri);
+        var callbacks = {};
+
+        this.bind = function(event_name, callback){
+                callbacks[event_name] = callbacks[event_name] || [];
+                callbacks[event_name].push(callback);
+                return this;// chainable
+        };
+
+        this.trigger = function(event_name, data){
+                var payload = JSON.stringify([event_name, data]);
+                conn.send( payload ); // <= send JSON data to socket server
+                return this;
+        };
+
+        // dispatch to the right handlers
+        conn.onmessage = function(evt) {
+                data = evt.data;
+
+                if ( !data.charCodeAt(0) )
+                        data = data.substr(1);
+
+                var data = JSON.parse( data ),
+                        event_name = data[0],
+                        message = data[1];
+                dispatch(event_name, message)
+        };
+
+        conn.onclose = function(){dispatch('close',null)}
+        conn.onopen = function(){dispatch('open',null)}
+
+        var dispatch = function(event_name, message){
+                var chain = callbacks[event_name];
+                if(typeof chain == 'undefined') return; // no callbacks for this event
+                for(var i = 0; i < chain.length; i++){
+                        chain[i]( message )
+                }
+                return;
+        }
+  }
+  
+
+  /*var server = new ServerEventsDispatcher();
+  server.bind('matchUpdate', function(evt){
+    $('.matchList').html(evt.data);
+  });
+  server.bind('leaderboard', function(evt){
+    $('.leaderboard').html(evt.data);
+  });
+
+    $('.noWinner').click(function(){
+  $.ajax({
+
+    type: "GET",
+    url: "pickwinner",
+    async: false,
+    data: "match="+$(this).attr('match')+"&team=" + $(this).attr('team'),
+    success: function(data){
+      alert(data);
+      $(this).parent().parent().parent().fadeOut("slow");
+      $(this).parent().parent().html(data);
+      $(this).parent().fadeIn("slow");
+    }
+  });*/
+  var server = new ServerEventsDispatcher();
+  server.bind('top10games', function(evt){
+   		var table = document.getElementByID("top10gamestable");
+   		var tbody = table.getElementsByTagName("tbody")[0];
+   		var rows = tbody.getElementsByTagName("tr");
+
+   		var populateRow = function(index, data )
+   		{
+   			var row = rows[index];
+   			var cells = row.getElementsByTagName("td")
+   			var awayTeamCell = cells[1];
+   			var homeTeamCell = cells[3];
+   			var strengthCell = cells[4];
+   			$(awayTeamCell).html(data['away']);
+   			$(homeTeamCell).html(data['home']);
+   			$(strengthCell).html(data['strength']);
+   			return false;
+
+   		}
     		
 
-    		for(i=0;i<evt.data.length;i++){
-    			populateRow(i, evt.data['games'][i], True)
-    		}
-    		$("#working").html = evt.data['isdone']
+   		for(i=0;i<evt.data.length;i++){
+   			alert('populate')
+   			populateRow(i, evt.data['games'][i], True);
+   		}
 
-  		});
+   		$("#working").html = evt.data['isdone'];
+   		alert($('#names').filter('input:checked'));
+   		/*$('.recalc').click(function() {
+   			var names = $("input:checked");
+   			var namelist = [];
+   			for (j=0;j<names.length;j++){
+   				namelist[j]=names[j].value;
+   			}
+   			alert(namelist);
+   			server.trigger('gettop10games', namelist);
+   			return false;
+   		});*/
+   		return false;
+  });
   		
-  		function recalculate() {
-  			var form = document.getElementByID("names")
-  			var names = form.getElementsByTagName("input")
+  /*function recalculate() {
+  			var form = $("#names")
+  			var names = $("input:checked").text;
+  			console.log(names);
   			server.trigger('gettop10games', names)
-  		}
-    })
+  }*/
+  
+  
+});
+/*$('.recalc').click(function() {
+   			var names = $("#names").filter(':checked').value;
+   			alert(names);
+   			server.trigger('gettop10games', names);
+   			return false;
+   		});*/
+$('.recalc').click(function() {
+			alert('hurr');
+   			var names = $("input:checked");
+   			var namelist = [];
+   			for (j=0;j<names.length;j++){
+   				namelist[j]=names[j].value;
+   			}
+   			alert(namelist);
+   			server.trigger('gettop10games', namelist);
+   			return false;
+   		});
+
     </script>
 
     <body>
@@ -81,37 +205,37 @@ Required:
 
     <div class="container">
     <div class="row">
-    <div class="span8">
-      <table id="top10gamestable">
-      <thead>
-      
+    <div class="col-lg-8">
+      <table id="top10gamestable" class="table table-condensed table-striped">
+      <thead><tr>
+      <th>Game</th><th class='text-right'>Probability of a draw</th>
+      </tr>
       </thead>
       <tbody>
       % for game in topGames:
   
-  	  <tr><td><span class="awayTeam">${game['away']}</span> vs <span class="homeTeam">${game['home']}</span></td><td><span class="strength">${game['strength']}</span>%</td></tr>
+  	  <tr><td><span class="awayTeam">${game['away']}</span> vs <span class="homeTeam">${game['home']}</span></td><td class="text-right"><span class="strength">${"{0:.2f}".format(game['strength'])}</span>%</td></tr>
   	  % endfor
       
       </tbody>
       </table>
     </div>
-    <div class="span4">
+    <div class="col-lg-4">
     <!--   insert multi-select box of players and an update button here-->
     <form id="names">
     	<fieldset>
     		<legend>Choose Players</legend>
     		<label id="#working"></label>
     		<!--<select multiple="multiple">
-    		%% for player in players:
-    		<option>${player.name}</option>
-    		%% endfor
+    		
     		</select> -->
     		% for player in players:
     		<label class="checkbox">
-    		<input type="checkbox" value=" ${player['name']} " ${player['ischecked']}> <a href="playerstats/${player['name']}">${player['name']}</a>
+    		<input type="checkbox" value=" ${player['name']} " ${player['isChecked']} class="hitters"> <a href="playerstats/${player['name']}">${player['name']}</a>
     		</label>
+    		% endfor
     		<div class="form-actions">
-    		<a type="submit" class="btn" href="javascript:recalculate()">Submit</a>
+    		<button type="button" class="btn btn-default recalc" id="recalc" href="#">Submit</button>
     		</div>
 
     	</fieldset>

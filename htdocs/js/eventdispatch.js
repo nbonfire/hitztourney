@@ -21,8 +21,8 @@ $(function(){
         } else {
           new_uri = "ws:";
         }
-        new_uri += "//" + loc.host;
-        new_uri += loc.pathname + "/ws";
+        new_uri += "//" + loc.host; //loc.pathname taken out
+        new_uri += "/ws";
         var conn = new WebSocket(new_uri);
         var callbacks = {};
 
@@ -86,5 +86,37 @@ $(function(){
       $(this).parent().fadeIn("slow");
     }
   });*/
+  var server = new ServerEventsDispatcher();
+    	server.bind('top10games', function(evt){
+   		var table = document.getElementByID("top10gamestable");
+   		var tbody = table.getElementsByTagName("tbody")[0];
+   		var rows = tbody.getElementsByTagName("tr");
+
+   		function populateRow(index, data )
+   		{
+   			var row = rows[index];
+   			var cells = row.getElementsByTagName("td")
+   			var awayTeamCell = cells[1];
+   			var homeTeamCell = cells[3];
+   			var strengthCell = cells[4];
+   			$(awayTeamCell).html(data['away']);
+   			$(homeTeamCell).html(data['home']);
+   			$(strengthCell).html(data['strength']);
+
+   		}
+    		
+
+   		for(i=0;i<evt.data.length;i++){
+   			populateRow(i, evt.data['games'][i], True)
+   		}
+   		$("#working").html = evt.data['isdone']
+
+  });
+  		
+  function recalculate() {
+  			var form = document.getElementByID("names")
+  			var names = form.getElementsByTagName("input")
+  			server.trigger('gettop10games', names)
+  }
   return false;
 });
