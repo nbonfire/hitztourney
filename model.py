@@ -3,6 +3,8 @@ from sqlalchemy import ForeignKey, Table, Text, create_engine, Column, Integer, 
 from sqlalchemy.orm import relationship, backref, sessionmaker
 import datetime
 
+import itertools
+from sortedcollection import *
 from trueskill import *
 
 env=TrueSkill(draw_probability=dynamic_draw_probability)
@@ -11,12 +13,7 @@ RESET=0
 SIGMA_CUTOFF=8.0
 
 Base = declarative_base()
-engine = create_engine('sqlite:///hitz.sqlite')
-Base.metadata.create_all(engine)
 
-Session = sessionmaker(bind=engine)
-
-session = Session()
 
 class Hitter(Base):
 	__tablename__='hitters'
@@ -70,7 +67,7 @@ class Team(Base):
 			if player.lastGamePlayed < comparedate:
 				comparedate=player.lastGamePlayed
 		return comparedate
-	def names(self):
+	def listnames(self):
 		return "%s, %s, %s"% (self.hitters[0].name, self.hitters[1].name, self.hitters[2].name)
 		
 
@@ -128,9 +125,11 @@ def get_or_create(session, model, **kwargs):
 	else:
 		instance = model(**kwargs)
 		session.add(instance)
+		session.commit()
 		return instance
 	# myHitter = get_or_create(session, Hitter, name=hitterName)
-def get_or_create_team(findplayers):
+def get_or_create_team(session, findplayers):
+	print findplayers
 	create_team = session.query(Team).filter(Team.hitters.any(Hitter.name==findplayers[0])).filter(Team.hitters.any(Hitter.name==findplayers[1])).filter(Team.hitters.any(Hitter.name==findplayers[2])).first()
 	#session.query(Team).filter(Team.players.in_()) session.query(Hitter).name.in_(session)
 	if not create_team:
@@ -141,7 +140,7 @@ def get_or_create_team(findplayers):
 		session.commit()
 	return create_team
 
-def getRecordsBelowSigma(sigma=SIGMA_CUTOFF):
+def getRecordsBelowSigma(session, sigma=SIGMA_CUTOFF):
 	records = session.query(Hitter).all()
 	recordsbelowsigma = []
 	#for record in records:
@@ -154,17 +153,19 @@ def getRecordsBelowSigma(sigma=SIGMA_CUTOFF):
 	recordsbelowsigma.sort(key=lambda player: player.rating.hitzskill())
 	return recordsbelowsigma
 
-def getStrength(homeNames,awayNames):
+
+
+def getStrength(session, homeNames,awayNames):
 	#
 	# ({'name':'alice','rating':2.0},{'name':'bob','rating':1.4},{'name':'charlie','rating':3.2})
 	#
-	homeTeam=get_or_create_team(homeNames)
-	awayTeam=get_or_create_team(awayNames)
+	homeTeam=get_or_create_team(session, homeNames)
+	awayTeam=get_or_create_team(session, awayNames)
 	homeRatings = homeTeam.tupleratings()
 	awayRatings = awayTeam.tupleratings()
 	return env.quality([homeRatings,awayRatings])
 
-def jsonbackup():
+def jsonbackup(session):
 	results = []
 	allgames = session.query(Game).all()
 
@@ -174,12 +175,12 @@ def jsonbackup():
 	return json.dumps(results)
 
 
-def getLastPlayed(homeNames,awayNames):
+def getLastPlayed(session, homeNames,awayNames):
 	#
-	# ({'name':'alice','rating':2.0},{'name':'bob','rating':1.4},{'name':'charlie','rating':3.2})
+	# ({'name':'alice','dateplayed':"7/10/13"},{'name':'bob','dateplayed':"7/10/13"},{'name':'charlie','dateplayed':"7/10/13"})
 	#
-	homeTeam=get_or_create_team(homeNames)
-	awayTeam=get_or_create_team(awayNames)
+	homeTeam=get_or_create_team(session, homeNames)
+	awayTeam=get_or_create_team(session, awayNames)
 	homeDate = homeTeam.getdatelastplayed()
 	awayDate = awayTeam.getdatelastplayed()
 	if homeDate<awayDate:
@@ -187,31 +188,32 @@ def getLastPlayed(homeNames,awayNames):
 	else:
 		return awayDate
 
-def completeGame(homeTeam,awayTeam,winner,datePlayed=datetime.datetime.today()):
-	homers=get_or_create_team(homeTeam)
-	awayers=get_or_create_team(awayTeam)
+def completeGame(session,homeTeam,awayTeam,winner,datePlayed=datetime.datetime.today()):
+	homers=get_or_create_team(session, homeTeam)
+	awayers=get_or_create_team(session, awayTeam)
 	homers.setdatelastplayed(datePlayed)
 	awayers.setdatelastplayed(datePlayed)
 
 	print "\n----------\n%s vs %s  " % (awayers, homers)
 	
 	if winner=='home':
-		winningteam=get_or_create_team(homeTeam)
+		winningteam=get_or_create_team(session, homeTeam)
 		#team rating
 		homers.teamrating,awayers.teamrating = rate_1vs1(homers.teamrating, awayers.teamrating)
 		#individual ratings
 		(awayers.hitters[0].rating, awayers.hitters[1].rating, awayers.hitters[2].rating),(homers.hitters[0].rating, homers.hitters[1].rating, homers.hitters[2].rating) = rate([[awayers.hitters[0].rating, awayers.hitters[1].rating, awayers.hitters[2].rating],[homers.hitters[0].rating, homers.hitters[1].rating, homers.hitters[2].rating]], ranks=[1,0])
 			
 	else:
-		winningteam=get_or_create_team(awayTeam)
+		winningteam=get_or_create_team(session, awayTeam)
 		#team ratings
 		awayers.teamrating,homers.teamrating = rate_1vs1(awayers.teamrating, homers.teamrating)
 		#individual ratings
 		(awayers.hitters[0].rating, awayers.hitters[1].rating, awayers.hitters[2].rating),(homers.hitters[0].rating, homers.hitters[1].rating, homers.hitters[2].rating) = rate([[awayers.hitters[0].rating, awayers.hitters[1].rating, awayers.hitters[2].rating],[homers.hitters[0].rating, homers.hitters[1].rating, homers.hitters[2].rating]], ranks=[0,1])
 	newgame = Game(hometeam=homers, awayteam=awayers, winner=winningteam,date=datePlayed)
+	session.add(newgame)
 	session.commit()
 
-def getPlayersForTemplate(checkedPlayers):
+def getPlayersForTemplate(session, checkedPlayers=['Nick', 'Rosen', 'Magoo', 'White Rob', 'Ziplox', 'Ced']):
 	players = session.query(Hitter).all()
 	names = []
 	#defined in matchups.py
@@ -225,7 +227,15 @@ def getPlayersForTemplate(checkedPlayers):
 	return names
 
 if __name__ == "__main__":
+	#Base = declarative_base()
+	engine = create_engine('sqlite:///hitz.sqlite')
+	
+
+	Session = sessionmaker(bind=engine)
+
+	session = Session()
 	Base.metadata.create_all(engine)
+
 	#setup_all()
 	#create_all()
 	hitlist=[]
@@ -263,7 +273,7 @@ if __name__ == "__main__":
 	
 	
 		for game in games:
-			completeGame(game['home'],game['away'],game['winner'], game['date'])
+			completeGame(session, game['home'],game['away'],game['winner'], game['date'])
 			
 			
 			
