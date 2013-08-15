@@ -198,7 +198,8 @@ class HitzApp(object):
 			players="['Nick', 'Drew', 'Ced', 'Magoo', 'Rosen', 'White Rob', 'Crabman']"
 		else:
 			players=kwargs['players']
-		generateGamePossibilities(cherrypy.request.db,json.loads(players))
+		return "True"
+
 	@cherrypy.expose
 	def ws(self):
 		handler = cherrypy.request.ws_handler
