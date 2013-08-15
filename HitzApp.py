@@ -188,8 +188,8 @@ class HitzApp(object):
 			return Template(filename='htdocs/stats.html', input_encoding='utf-8').render(user=user,rival=rival(user),bff=bff(user),ratingMu=ratingMu(user),ratingSigma=ratingSigma(user),bestTeam=bestTeam(user),rank=rank(user),upcominggames=upcomingGames(user))
 #Template(filename='htdocs/standaloneleaderboard.html', input_encoding = 'utf-8').render(leaderboardList=leaderboardBody, nextmatch=nextMatch, matchlog = generateMatchLog())
 	@cherrypy.expose
-	def update(self):
-		generateGamePossibilities(cherrypy.request.db,['Nick', 'Drew', 'Ced', 'Magoo', 'Rosen', 'White Rob', 'Crabman'])
+	def update(self, players="['Nick', 'Drew', 'Ced', 'Magoo', 'Rosen', 'White Rob', 'Crabman']"):
+		generateGamePossibilities(cherrypy.request.db,json.loads(players))
 	@cherrypy.expose
 	def ws(self):
 		handler = cherrypy.request.ws_handler
