@@ -46,8 +46,7 @@ class Publisher(WebSocket):
 			print "\nevent %s not found. Data: %s \n From message: %s\n" % eventname, str(eventdata), str(message)
 	#for conn in SUBSCRIBERS:
 	#    conn.send(json.dumps({"event":'leaderboard', 'data':returnString}))
-	def update(self):
-		generateGamePossibilities
+
 
 def sendMessage(event, data):
 	#
