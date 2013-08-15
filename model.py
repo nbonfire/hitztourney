@@ -163,7 +163,7 @@ def getStrength(session, homeNames,awayNames):
 	awayTeam=get_or_create_team(session, awayNames)
 	homeRatings = homeTeam.tupleratings()
 	awayRatings = awayTeam.tupleratings()
-	return env.quality([homeRatings,awayRatings])
+	return int(env.quality([homeRatings,awayRatings])*10000)
 
 def jsonbackup(session):
 	results = []

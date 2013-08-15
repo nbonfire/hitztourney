@@ -47,6 +47,10 @@ Required:
     <div class="container">
     <div class="row">
     <div class="col-lg-8">
+    <table>
+    <thead><tr><th>Away</th><th>Home</th></tr>
+    </table>
+    <div class="row">
       <table id="top10gamestable" class="table table-condensed table-striped">
       <thead><tr>
       <th>Game</th><th class='text-right'>Probability of a draw</th>
@@ -60,6 +64,7 @@ Required:
       
       </tbody>
       </table>
+    </div>
     </div>
     <div class="col-lg-4">
     <!--   insert multi-select box of players and an update button here-->
@@ -238,16 +243,18 @@ Required:
       //alert('hurr');
         var names = $("input:checked");
         var namelist = [];
+
         for (j=0;j<names.length;j++){
           namelist[j]=names[j].value;
         }
-        console.log(namelist);
+        var namedict = {"name":"players","data":namelist};
+        console.log(JSON.stringify(namedict));
         /*server.trigger('gettop10games', namelist);
         return false;*/
         $.ajax({
           type: "GET",
           url: "/update",
-          data: "players=["+namelist+"]",
+          data: "players="+JSON.stringify(namedict),
         /*success: function(data){
       
           $("#"+match).html(data);

@@ -15,6 +15,7 @@ from model import *
 #from matchups import *
 #from publisher import *
 
+defaultGamesList = list()
 #
 # WEBSOCKET CHERRYPY PLUGIN
 #
@@ -140,6 +141,14 @@ class SATool(cherrypy.Tool):
 #
 
 
+def getDefaultGamesList(session):
+	global defaultGamesList
+	if not defaultGamesList:
+		defaultGamesList=list(generateGamePossibilities(session, usesWebsocket = False))
+		return defaultGamesList
+	else:
+		return defaultGamesList
+
 def generateGamePossibilities(session, listOfPlayers=['Nick', 'Rosen', 'Magoo', 'White Rob', 'Ziplox', 'Ced'], numberOfGames=10, usesWebsocket = True):
 	# 
 	# output should be a list of games [{'home':team,'away':team, 'strength':float}] randomized, then sorted by strength
@@ -158,7 +167,7 @@ def generateGamePossibilities(session, listOfPlayers=['Nick', 'Rosen', 'Magoo', 
 			complete.add(home[0])
 			remaining_players = players - set(home) - complete
 			for away in itertools.combinations(remaining_players, 3):
-				potentialGamesCollection.insert({'home':'%s, %s, %s' % (home[0],home[1],home[2]), 'away':'%s, %s, %s' % (away[0],away[1],away[2]), 'strength':getStrength(session, homeNames=home,awayNames=away)*100, 'lastPlayed':str(getLastPlayed(session, homeNames=home,awayNames=away))})
+				potentialGamesCollection.insert({'home':'%s, %s, %s' % (home[0],home[1],home[2]), 'away':'%s, %s, %s' % (away[0],away[1],away[2]), 'strength':(float(getStrength(session, homeNames=home,awayNames=away))/100), 'lastPlayed':str(getLastPlayed(session, homeNames=home,awayNames=away))})
 				#potentialGames.append( {'home':home, 'away':away, 'strength':getStrength(homeNames=home,awayNames=away), 'lastPlayed':getLastPlayed(homeNames=home,awayNames=away)})
 				if len(potentialGamesCollection)>numberOfGames:
 					potentialGamesCollection.removebyindex(numberOfGames)
@@ -174,6 +183,7 @@ def generateGamePossibilities(session, listOfPlayers=['Nick', 'Rosen', 'Magoo', 
 						sendMessage(event='top10games', data={'games':list(potentialGamesCollection), 'isdone':"Working..."})
 
 		if usesWebsocket == True:
+			defaultGamesList = list(potentialGamesCollection)
 			sendMessage(event='top10games', data={'games':list(potentialGamesCollection), 'isdone':"Done"})
 			print 'Elapsed Time: %s seconds' % str((lastupdate-timenow).total_seconds)
 			return True
@@ -183,7 +193,7 @@ def generateGamePossibilities(session, listOfPlayers=['Nick', 'Rosen', 'Magoo', 
 class HitzApp(object):
 	@cherrypy.expose
 	def games(self):
-		return Template(filename='htdocs/guessgames.html', input_encoding = 'utf-8').render(topGames=list(generateGamePossibilities(cherrypy.request.db, usesWebsocket = False)),players=getPlayersForTemplate(session=cherrypy.request.db))
+		return Template(filename='htdocs/guessgames.html', input_encoding = 'utf-8').render(topGames=getDefaultGamesList(cherrypy.request.db),players=getPlayersForTemplate(session=cherrypy.request.db))
 
 	@cherrypy.expose
 	def playerstats(self, user):
@@ -194,10 +204,13 @@ class HitzApp(object):
 #Template(filename='htdocs/standaloneleaderboard.html', input_encoding = 'utf-8').render(leaderboardList=leaderboardBody, nextmatch=nextMatch, matchlog = generateMatchLog())
 	@cherrypy.expose
 	def update(self, **kwargs):
-		if len(kwargs)<6:
-			players="['Nick', 'Drew', 'Ced', 'Magoo', 'Rosen', 'White Rob', 'Crabman']"
+		#players="{'players':['Nick', 'Drew', 'Ced', 'Magoo', 'Rosen', 'White Rob', 'Crabman']}"
+		if len(kwargs['players'])<6:
+			players='{"name":"players","data":["Magoo","Rosen","White Rob","Ziplox","Drew","Crabman"]}'
 		else:
 			players=kwargs['players']
+		print json.loads(players)['data']
+		generateGamePossibilities(session=cherrypy.request.db,listOfPlayers=json.loads(players)['data'])
 		return "True"
 
 	@cherrypy.expose
@@ -205,7 +218,6 @@ class HitzApp(object):
 		handler = cherrypy.request.ws_handler
 
 if __name__ == '__main__':
-	
 	
 	SAEnginePlugin(cherrypy.engine).subscribe()
 	cherrypy.tools.db = SATool()
