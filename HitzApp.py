@@ -32,6 +32,9 @@ class Publisher(WebSocket):
 
 	def closed(self, code, reason=None):
 		SUBSCRIBERS.remove(self)
+	"""
+	# I commented this out because until I figure how to get a session into the Publisher class, I'll just use ajax 
+	# to trigger the "generateGamePossibilities" 
 	def received_message(self, message):
 		#print "received_message %s" % str(message)
 		pythonmessage = json.loads(str(message))
@@ -44,6 +47,8 @@ class Publisher(WebSocket):
 			print "%s triggered successfully with data %s" % eventname, str(eventdata)
 		else:
 			print "\nevent %s not found. Data: %s \n From message: %s\n" % eventname, str(eventdata), str(message)
+
+			"""
 	#for conn in SUBSCRIBERS:
 	#    conn.send(json.dumps({"event":'leaderboard', 'data':returnString}))
 
@@ -188,7 +193,11 @@ class HitzApp(object):
 			return Template(filename='htdocs/stats.html', input_encoding='utf-8').render(user=user,rival=rival(user),bff=bff(user),ratingMu=ratingMu(user),ratingSigma=ratingSigma(user),bestTeam=bestTeam(user),rank=rank(user),upcominggames=upcomingGames(user))
 #Template(filename='htdocs/standaloneleaderboard.html', input_encoding = 'utf-8').render(leaderboardList=leaderboardBody, nextmatch=nextMatch, matchlog = generateMatchLog())
 	@cherrypy.expose
-	def update(self, players="['Nick', 'Drew', 'Ced', 'Magoo', 'Rosen', 'White Rob', 'Crabman']"):
+	def update(self, **kwargs):
+		if len(kwargs)<6:
+			players="['Nick', 'Drew', 'Ced', 'Magoo', 'Rosen', 'White Rob', 'Crabman']"
+		else:
+			players=kwargs['players']
 		generateGamePossibilities(cherrypy.request.db,json.loads(players))
 	@cherrypy.expose
 	def ws(self):

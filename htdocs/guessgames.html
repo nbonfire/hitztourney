@@ -26,167 +26,7 @@ Required:
     <script type="text/javascript" src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
     <!--script src="http://127.0.0.1:8080/js/eventdispatch.js"></script-->
 
-    <script type="text/javascript">
-  $(function(){
-    	
-    
-  /*
-        Ismael Celis 2010
-        Simplified WebSocket events dispatcher (no channels, no users)
 
-        var socket = new ServerEventsDispatcher();
-
-        // bind to server events
-        socket.bind('some_event', function(data){
-                alert(data.name + ' says: ' + data.message)
-        });
-
-        // broadcast events to all connected users
-        socket.trigger( 'some_event', {name: 'ismael', message : 'Hello world'} );
-  */
-  var ServerEventsDispatcher = function( ){
-        var loc = window.location, new_uri;
-        if (loc.protocol === "https:") {
-          new_uri = "wss:";
-        } else {
-          new_uri = "ws:";
-        }
-        new_uri += "//" + loc.host; //loc.pathname taken out
-        new_uri += "/ws";
-        var conn = new WebSocket(new_uri);
-        var callbacks = {};
-
-        this.bind = function(event_name, callback){
-                callbacks[event_name] = callbacks[event_name] || [];
-                callbacks[event_name].push(callback);
-                return this;// chainable
-        };
-
-        this.trigger = function(event_name, data){
-                var payload = JSON.stringify([event_name, data]);
-                console.log(payload)
-                conn.send( payload ); // <= send JSON data to socket server
-                return this;
-        };
-
-        // dispatch to the right handlers
-        conn.onmessage = function(evt) {
-                data = evt.data;
-                console.log(data);
-                if ( !data.charCodeAt(0) ){
-                        console.log(data.charCodeAt(0));
-                        console.log(data.substr(1));
-                        data = data.substr(1);
-                      }
-
-                var data = JSON.parse( data ),
-                        event_name = data['event'];
-                        console.log(data['event']);
-                        message = data['data'];
-                        console.log(data['data']);
-                dispatch(event_name, message)
-                console.log(event_name);
-        };
-
-        conn.onclose = function(){dispatch('close',null)}
-        conn.onopen = function(){
-          dispatch('open',null);
-          console.log('websocket open');
-        }
-
-        var dispatch = function(event_name, message){
-                var chain = callbacks[event_name];
-                console.log(event_name);
-                if(typeof chain == 'undefined') return; // no callbacks for this event
-                for(var i = 0; i < chain.length; i++){
-                        chain[i]( message );
-                }
-                
-        }
-  }
-  
-
-  /*var server = new ServerEventsDispatcher();
-  server.bind('matchUpdate', function(evt){
-    $('.matchList').html(evt.data);
-  });
-  server.bind('leaderboard', function(evt){
-    $('.leaderboard').html(evt.data);
-  });
-
-    $('.noWinner').click(function(){
-  $.ajax({
-
-    type: "GET",
-    url: "pickwinner",
-    async: false,
-    data: "match="+$(this).attr('match')+"&team=" + $(this).attr('team'),
-    success: function(data){
-      alert(data);
-      $(this).parent().parent().parent().fadeOut("slow");
-      $(this).parent().parent().html(data);
-      $(this).parent().fadeIn("slow");
-    }
-  });*/
-  var server = new ServerEventsDispatcher();
-  server.bind('top10games', function(evt){
-   		//var table = document.getElementByID("top10gamestable");
-   		var tbody = $('#top10gamestable').find("tbody")[0];
-   		var rows = tbody.getElementsByTagName("tr");
-      console.log(evt)
-   		var populateRow = function(index, data )
-   		{
-   			var row = rows[index];
-   			var cells = row.getElementsByTagName("span")
-   			var awayTeamCell = cells[0];
-   			var homeTeamCell = cells[1];
-   			var strengthCell = cells[2];
-   			$(awayTeamCell).html(data['away']);
-   			$(homeTeamCell).html(data['home']);
-   			$(strengthCell).html(data['strength']);
-   			return false;
-
-   		}
-    		
-
-   		for(i=0;i<evt['games'].length;i++){//s/10/evt.data.length
-   			console.log('populate')
-   			populateRow(i, evt['games'][i]);
-   		}
-
-   		$("#working").html = evt['isdone'];
-   		//console($('#names').filter('input:checked'));
-   		/*$('.recalc').click(function() {
-   			var names = $("input:checked");
-   			var namelist = [];
-   			for (j=0;j<names.length;j++){
-   				namelist[j]=names[j].value;
-   			}
-   			alert(namelist);
-   			server.trigger('gettop10games', namelist);
-   			return false;
-   		});*/
-   		return false;
-  });
-  		
-  /*function recalculate() {
-  			var form = $("#names")
-  			var names = $("input:checked").text;
-  			console.log(names);
-  			server.trigger('gettop10games', names)
-  }*/
-  
-  
-});
-/*$('.recalc').click(function() {
-   			var names = $("#names").filter(':checked').value;
-   			alert(names);
-   			server.trigger('gettop10games', names);
-   			return false;
-   		});*/
-
-
-    </script>
 
     <body>
     <div class="navbar">
@@ -402,8 +242,20 @@ Required:
           namelist[j]=names[j].value;
         }
         console.log(namelist);
-        server.trigger('gettop10games', namelist);
-        return false;
+        /*server.trigger('gettop10games', namelist);
+        return false;*/
+        $.ajax({
+          type: "GET",
+          url: "/update",
+          data: "players="+namelist,
+        /*success: function(data){
+      
+          $("#"+match).html(data);
+      
+          return false;
+        }*/
+
+        });
       });
 
 });
