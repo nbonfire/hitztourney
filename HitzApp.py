@@ -57,7 +57,7 @@ class Publisher(WebSocket):
 def sendMessage(event, data):
 	#
 	for conn in SUBSCRIBERS:
-		print "%s:%s" %(event,data)
+		#print "%s:%s" %(event,data)
 		conn.send(json.dumps({'event':event, 'data':data}))
 
 
@@ -153,6 +153,7 @@ def generateGamePossibilities(session, listOfPlayers=['Nick', 'Rosen', 'Magoo', 
 	# 
 	# output should be a list of games [{'home':team,'away':team, 'strength':float}] randomized, then sorted by strength
 	#
+	global defaultGamesList
 	if len(listOfPlayers)<6:
 		print "error: %s doesn't have enough players" % listOfPlayers
 		return generateGamePossibilities(numberOfGames=numberOfGames, usesWebsocket=usesWebsocket)
@@ -163,10 +164,16 @@ def generateGamePossibilities(session, listOfPlayers=['Nick', 'Rosen', 'Magoo', 
 		complete = set()
 		begintime=datetime.datetime.now()
 		lastupdate=begintime #when was the last time we printed the results?
-		for home in itertools.combinations(players, 3):
+		firstcombo=itertools.combinations(players, 3)
+		
+		iterations=(len(players))*(len(players)-1)*(len(players)-2)/6
+		iterator=0
+		for home in firstcombo:
+			iterator=iterator+1
 			complete.add(home[0])
 			remaining_players = players - set(home) - complete
 			for away in itertools.combinations(remaining_players, 3):
+				
 				potentialGamesCollection.insert({'home':'%s, %s, %s' % (home[0],home[1],home[2]), 'away':'%s, %s, %s' % (away[0],away[1],away[2]), 'strength':(float(getStrength(session, homeNames=home,awayNames=away))/100), 'lastPlayed':str(getLastPlayed(session, homeNames=home,awayNames=away))})
 				#potentialGames.append( {'home':home, 'away':away, 'strength':getStrength(homeNames=home,awayNames=away), 'lastPlayed':getLastPlayed(homeNames=home,awayNames=away)})
 				if len(potentialGamesCollection)>numberOfGames:
@@ -176,15 +183,15 @@ def generateGamePossibilities(session, listOfPlayers=['Nick', 'Rosen', 'Magoo', 
 				if usesWebsocket==True:
 					timenow=datetime.datetime.now()
 					difference=timenow-lastupdate
-					if difference.total_seconds()>2:
+					if difference.total_seconds()>1:
 						#cls()
 						#print list(potentialGamesCollection)
 						lastupdate=timenow
-						sendMessage(event='top10games', data={'games':list(potentialGamesCollection), 'isdone':"Working..."})
-
+						sendMessage(event='top10games', data={'games':list(potentialGamesCollection), 'isdone':"Working...", 'percentComplete':str(iterator*100/iterations)})
+		#print "\n\n\n outer iterations: %d - inner iterations: %d - guesstimate: %d"%(iterator, iterations)
 		if usesWebsocket == True:
 			defaultGamesList = list(potentialGamesCollection)
-			sendMessage(event='top10games', data={'games':list(potentialGamesCollection), 'isdone':"Done"})
+			sendMessage(event='top10games', data={'games':list(potentialGamesCollection), 'isdone':"Done", 'percentComplete':'100'})
 			print 'Elapsed Time: %s seconds' % str((lastupdate-timenow).total_seconds)
 			return True
 		else:
@@ -209,7 +216,7 @@ class HitzApp(object):
 			players='{"name":"players","data":["Magoo","Rosen","White Rob","Ziplox","Drew","Crabman"]}'
 		else:
 			players=kwargs['players']
-		print json.loads(players)['data']
+		#print json.loads(players)['data']
 		generateGamePossibilities(session=cherrypy.request.db,listOfPlayers=json.loads(players)['data'])
 		return "True"
 

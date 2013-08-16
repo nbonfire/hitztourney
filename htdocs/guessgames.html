@@ -45,12 +45,75 @@ Required:
     </div>
 
     <div class="container">
+    <form class="form-inline" role="form">
+    <div class="row">
+    <div class="col-lg-6">
+
+      <div class="panel">
+  <div class="panel-heading">
+    <h3 class="panel-title">Away</h3>
+  </div>
+  <div class="panel-body">
+  <div class="form-group">
+    <select class="form-control awayteam" width=33%>
+    % for player in players:
+  <option>${player['name']}</option>
+    % endfor
+  
+  </select>
+  </div>
+  <div class="form-group">
+  <select class="form-control awayteam" width=33%>
+  % for player in players:
+  <option>${player['name']}</option>
+    % endfor
+</select>
+</div>
+<div class="form-group">
+<select class="form-control awayteam" width=33%>
+ % for player in players:
+  <option>${player['name']}</option>
+    % endfor
+</select>
+</div>
+  </div>
+</div>
+    </div>
+    <div class="col-lg-6">
+      <div class="panel">
+  <div class="panel-heading">
+    <h3 class="panel-title">Home</h3>
+  </div>
+  <div class="panel-body">
+    <select class=" form-control awayteam">
+% for player in players:
+  <option>${player['name']}</option>
+    % endfor
+  </select>
+  <select class="form-inline form-control awayteam">
+% for player in players:
+  <option>${player['name']}</option>
+    % endfor
+</select>
+<select class="form-inline form-control awayteam">
+% for player in players:
+  <option>${player['name']}</option>
+    % endfor
+</select>
+  </div>
+</div>
+    </div>
+    </div>
+    </form>
     <div class="row">
     <div class="col-lg-8">
-    <table>
-    <thead><tr><th>Away</th><th>Home</th></tr>
-    </table>
+    
     <div class="row">
+      <div class="progress progress-striped active" id="gamecalcprogress">
+        <div class="progress-bar" id="gamecalcprogressbar"  role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+          <span class='sr-only'></span>
+        </div>
+      </div>
       <table id="top10gamestable" class="table table-condensed table-striped">
       <thead><tr>
       <th>Game</th><th class='text-right'>Probability of a draw</th>
@@ -77,7 +140,11 @@ Required:
     		</select> -->
     		% for player in players:
     		<label class="checkbox">
-    		<input type="checkbox" value="${player['name']}" ${player['isChecked']} class="hitters"> <a href="playerstats/${player['name']}">${player['name']}</a>
+    		<input type="checkbox" value="${player['name']}" 
+          % if player['isChecked']:
+            checked
+          % endif
+         class="hitters"> <a href="playerstats/${player['name']}">${player['name']}</a>
     		</label>
     		% endfor
     		<div class="form-actions">
@@ -207,14 +274,25 @@ Required:
         $(awayTeamCell).html(data['away']);
         $(homeTeamCell).html(data['home']);
         $(strengthCell).html(data['strength']);
+
         return false;
 
       }
-        
-
+      if(evt['percentComplete'!="100"]) $('#gamecalcprogressbar').show();
+      $('#gamecalcprogress').addClass('active')
       for(i=0;i<evt['games'].length;i++){//s/10/evt.data.length
         console.log('populate')
         populateRow(i, evt['games'][i]);
+      }
+      //$('#gamecalcprogressbar').prop('aria-valuenow') = evt['percentComplete']
+      $('#gamecalcprogressbar').css('width', evt['percentComplete']+"%")
+      $('#gamecalcprogressbar').css('display', "block")
+      $('#gamecalcprogressbar').html(evt['percentComplete']+"%")
+      if(evt['percentComplete']=="100"){
+        $('#gamecalcprogressbar').html("Finished!")
+        $('#gamecalcprogress').removeClass('active')
+        $('#gamecalcprogressbar').fadeOut(duration=800)
+        
       }
 
       $("#working").html = evt['isdone'];

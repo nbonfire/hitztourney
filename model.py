@@ -129,7 +129,7 @@ def get_or_create(session, model, **kwargs):
 		return instance
 	# myHitter = get_or_create(session, Hitter, name=hitterName)
 def get_or_create_team(session, findplayers):
-	print findplayers
+	#print findplayers
 	create_team = session.query(Team).filter(Team.hitters.any(Hitter.name==findplayers[0])).filter(Team.hitters.any(Hitter.name==findplayers[1])).filter(Team.hitters.any(Hitter.name==findplayers[2])).first()
 	#session.query(Team).filter(Team.players.in_()) session.query(Hitter).name.in_(session)
 	if not create_team:
@@ -194,7 +194,7 @@ def completeGame(session,homeTeam,awayTeam,winner,datePlayed=datetime.datetime.t
 	homers.setdatelastplayed(datePlayed)
 	awayers.setdatelastplayed(datePlayed)
 
-	print "\n----------\n%s vs %s  " % (awayers, homers)
+	#print "\n----------\n%s vs %s  " % (awayers, homers)
 	
 	if winner=='home':
 		winningteam=get_or_create_team(session, homeTeam)
