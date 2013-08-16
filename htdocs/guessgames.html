@@ -48,63 +48,86 @@ Required:
     <form class="form-inline" role="form">
     <div class="row">
     <div class="col-lg-6">
-
       <div class="panel">
   <div class="panel-heading">
     <h3 class="panel-title">Away</h3>
   </div>
   <div class="panel-body">
-  <div class="form-group">
-    <select class="form-control awayteam" width=33%>
+  <div class="row">
+    <div class="col-lg-4">
+    
+    <select class="form-control awaychoice" width=33%>
     % for player in players:
-  <option>${player['name']}</option>
+  <option value="${player['name']}">${player['name']}</option>
     % endfor
   
-  </select>
+  </select >
   </div>
-  <div class="form-group">
-  <select class="form-control awayteam" width=33%>
+  <div class="col-lg-4">
+  <select class="form-control awaychoice" width=33%>
   % for player in players:
-  <option>${player['name']}</option>
+  <option value="${player['name']}">${player['name']}</option>
     % endfor
 </select>
 </div>
-<div class="form-group">
-<select class="form-control awayteam" width=33%>
+  <div class="col-lg-4">
+<select class="form-control awaychoice" width=33%>
  % for player in players:
-  <option>${player['name']}</option>
+  <option value="${player['name']}">${player['name']}</option>
     % endfor
 </select>
-</div>
+</div></div>
   </div>
 </div>
     </div>
+
     <div class="col-lg-6">
       <div class="panel">
   <div class="panel-heading">
     <h3 class="panel-title">Home</h3>
   </div>
   <div class="panel-body">
-    <select class=" form-control awayteam">
+  <div class="row">
+  <div class="col-lg-4">
+    <select class=" form-control homechoice">
 % for player in players:
-  <option>${player['name']}</option>
+  <option value="${player['name']}">${player['name']}</option>
     % endfor
   </select>
-  <select class="form-inline form-control awayteam">
+  </div>
+  <div class="col-lg-4">
+  <select class="form-inline form-control homechoice">
 % for player in players:
-  <option>${player['name']}</option>
+  <option value="${player['name']}">${player['name']}</option>
     % endfor
 </select>
-<select class="form-inline form-control awayteam">
+</div>
+<div class="col-lg-4">
+<select class="form-inline form-control homechoice">
 % for player in players:
-  <option>${player['name']}</option>
+  <option value="${player['name']}">${player['name']}</option>
     % endfor
 </select>
+</div>
+</div>
   </div>
 </div>
     </div>
     </div>
     </form>
+    <div class="row" id="probability">
+    <div class="col-lg-2 align-center">
+    <center><button class="btn btn-success">Away won</button></center>
+    </div>
+    <div class="col-lg-8">
+    <div class="alert alert-info">
+    Haven't calculated the probability yet.<span class="probabilityalert"></span>
+    </div>
+    </div>
+    <div class="col-lg-2 align-center">
+    <button class="btn btn-success">Home won</button>
+    </div>
+    </div>
     <div class="row">
     <div class="col-lg-8">
     
@@ -122,7 +145,7 @@ Required:
       <tbody>
       % for game in topGames:
   
-  	  <tr><td><span class="awayTeam">${game['away']}</span> vs <span class="homeTeam">${game['home']}</span></td><td class="text-right"><span class="strength">${"{0:.2f}".format(game['strength'])}</span>%</td></tr>
+  	  <tr><td class='rankedgame'><span class="awayTeam"><span class="away0">${game['away'][0]}</span>, <span class="away1">${game['away'][1]}</span>, <span class="away2">${game['away'][2]}</span></span> vs <span class="homeTeam"><span class="home0">${game['home'][0]}</span>, <span class="home1">${game['home'][1]}</span>, <span class="home2">${game['home'][2]}</span></span></td><td class="text-right"><span class="strength">${"{0:.2f}".format(game['strength'])}</span>%</td></tr>
   	  % endfor
       
       </tbody>
@@ -236,28 +259,7 @@ Required:
   }
   
 
-  /*var server = new ServerEventsDispatcher();
-  server.bind('matchUpdate', function(evt){
-    $('.matchList').html(evt.data);
-  });
-  server.bind('leaderboard', function(evt){
-    $('.leaderboard').html(evt.data);
-  });
-
-    $('.noWinner').click(function(){
-  $.ajax({
-
-    type: "GET",
-    url: "pickwinner",
-    async: false,
-    data: "match="+$(this).attr('match')+"&team=" + $(this).attr('team'),
-    success: function(data){
-      alert(data);
-      $(this).parent().parent().parent().fadeOut("slow");
-      $(this).parent().parent().html(data);
-      $(this).parent().fadeIn("slow");
-    }
-  });*/
+  
   var server = new ServerEventsDispatcher();
   server.bind('top10games', function(evt){
       //var table = document.getElementByID("top10gamestable");
@@ -267,22 +269,27 @@ Required:
       var populateRow = function(index, data )
       {
         var row = rows[index];
-        var cells = row.getElementsByTagName("span")
+        
+        for(i=0;i<3;i++){
+        $(row).find('.away'+i).html(data['away'][i]);
+        $(row).find('.home'+i).html(data['home'][i]);
+        }
+        /*
         var awayTeamCell = cells[0];
         var homeTeamCell = cells[1];
         var strengthCell = cells[2];
-        $(awayTeamCell).html(data['away']);
-        $(homeTeamCell).html(data['home']);
-        $(strengthCell).html(data['strength']);
+        $(awayTeamCell).html(data['away'][0]+", "+data['away'][1]+", "+data['away'][2]);
+        $(homeTeamCell).html(data['home'][0]+", "+data['home'][1]+", "+data['home'][2]);*/
+        $(row).find('.strength').html(data['strength']);
 
         return false;
 
       }
       if(evt['percentComplete'!="100"]) $('#gamecalcprogressbar').show();
       $('#gamecalcprogress').addClass('active')
-      for(i=0;i<evt['games'].length;i++){//s/10/evt.data.length
+      for(j=0;j<evt['games'].length;j++){//s/10/evt.data.length
         console.log('populate')
-        populateRow(i, evt['games'][i]);
+        populateRow(j, evt['games'][j]);
       }
       //$('#gamecalcprogressbar').prop('aria-valuenow') = evt['percentComplete']
       $('#gamecalcprogressbar').css('width', evt['percentComplete']+"%")
@@ -342,6 +349,68 @@ Required:
 
         });
       });
+      $('.rankedgame').click(function() {
+        
+        //console.log($(this).find('.awayTeam').first().find('span')[0].innerHTML)
+        $(this).find('.awayTeam').first().find('span').each(function(index){
+          //console.log($('.awaychoice').slice(index).first().html())
+          //console.log($(this).first().html())
+          $('.awaychoice').slice(index).first().val($(this).html())
+          //console.log($('.awaychoice').slice(index).first().val())
+          //console.log(this)
+        })
+        $(this).find('.homeTeam').first().find('span').each(function(index){
+          //console.log($('.awaychoice').slice(index).first().html())
+          //console.log($(this).first().html())
+          $('.homechoice').slice(index).first().val($(this).html())
+          //console.log($('.awaychoice').slice(index).first().val())
+          //console.log(this)
+        })
+        $('select').first().change();
+
+
+        /*
+        $('.awaychoice').each(function(index){
+
+          $(this).val(awaynames[index])
+          console.log(awaynames[index])
+        })*/
+        //console.log(awaynames)
+
+        /*
+        awaynames.append(.html())
+        $('.awayteam').each(function(index){
+          $(this).val()
+          $(game).find('.'+$(game).find('.away'+index).html()).prop('selected'=True)
+        })*/
+        
+      })
+      $('select').change(function(){
+        var str = "";
+        var namelist = [];
+        var awayteamlist = [];
+        var hometeamlist = [];
+        var shouldWeSelect = true;
+        $(".awaychoice option:selected").each(function(index){
+          for (l=0;l<index;l++){
+            if ($(this).text() ==namelist[l]) shouldWeSelect= false;
+          }
+          namelist[index]=$(this).text();
+          awayteamlist[index]=$(this).text();
+          
+        });
+        $(".homechoice option:selected").each(function(index){
+          for (l=0;l<index+3;l++){
+            if ($(this).text() ==namelist[l]) shouldWeSelect= false;
+          }
+          namelist[index+3]=$(this).text();
+          hometeamlist[index]=$(this).text();
+          
+        });
+        console.log(namelist);
+        console.log(awayteamlist);
+        console.log(hometeamlist);
+      })
 
 });
 /*$('.recalc').click(function() {

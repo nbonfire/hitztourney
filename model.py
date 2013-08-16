@@ -55,6 +55,8 @@ class Team(Base):
 			ratingslist.append(player.rating)
 
 		return tuple(ratingslist)
+	def teamskill(self):
+		return (self.teamrating.mu - 3.0*self.teamrating.sigma)
 	def setdatelastplayed(self, datePlayed=datetime.datetime.today()):
 		
 		for player in self.hitters:
@@ -69,6 +71,16 @@ class Team(Base):
 		return comparedate
 	def listnames(self):
 		return "%s, %s, %s"% (self.hitters[0].name, self.hitters[1].name, self.hitters[2].name)
+	def getteamrating(self):
+		sumindividual=0.0
+		for player in self.hitters:
+			sumindividual=sumindividual+player.hitzskill()
+		avgindividual= sumindividual/len(self.hitters)
+		
+		if avgindividual>self.teamskill():
+			return avgindividual
+		else:
+			return self.teamskill()
 		
 
 class Game(Base):

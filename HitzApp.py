@@ -29,7 +29,8 @@ class Publisher(WebSocket):
 	def __init__(self, *args, **kw):
 		WebSocket.__init__(self, *args, **kw)
 		print str(self) + "connected"
-		SUBSCRIBERS.add(self)
+		SUBSCRIBERS.add({'UID':len(SUBSCRIBERS),'connection':self})
+		self.send(json.dumps({'event':'UID', 'data':len(SUBSCRIBERS)}))
 
 	def closed(self, code, reason=None):
 		SUBSCRIBERS.remove(self)
@@ -174,7 +175,9 @@ def generateGamePossibilities(session, listOfPlayers=['Nick', 'Rosen', 'Magoo', 
 			remaining_players = players - set(home) - complete
 			for away in itertools.combinations(remaining_players, 3):
 				
-				potentialGamesCollection.insert({'home':'%s, %s, %s' % (home[0],home[1],home[2]), 'away':'%s, %s, %s' % (away[0],away[1],away[2]), 'strength':(float(getStrength(session, homeNames=home,awayNames=away))/100), 'lastPlayed':str(getLastPlayed(session, homeNames=home,awayNames=away))})
+				potentialGamesCollection.insert({'home':[home[0], home[1], home[2]],'homerating':get_or_create_team(session, [home[0],home[1],home[2]]).getteamrating(), 'away':[away[0], away[1], away[2]], 'awayrating':get_or_create_team(session, [away[0],away[1],away[2]]).getteamrating(), 'strength':(float(getStrength(session, homeNames=home,awayNames=away))/100), 'lastPlayed':str(getLastPlayed(session, homeNames=home,awayNames=away))})
+				#potentialGamesCollection.insert({'home':["%s", "%s", "%s"] % (home[0],home[1],home[2]),'homerating':get_or_create_team(session, [home[0],home[1],home[2]]).getteamrating(), 'away':'["%s", "%s", "%s"]' % (away[0],away[1],away[2]), 'awayrating':get_or_create_team(session, [away[0],away[1],away[2]]).getteamrating(), 'strength':(float(getStrength(session, homeNames=home,awayNames=away))/100), 'lastPlayed':str(getLastPlayed(session, homeNames=home,awayNames=away))})
+				
 				#potentialGames.append( {'home':home, 'away':away, 'strength':getStrength(homeNames=home,awayNames=away), 'lastPlayed':getLastPlayed(homeNames=home,awayNames=away)})
 				if len(potentialGamesCollection)>numberOfGames:
 					potentialGamesCollection.removebyindex(numberOfGames)
