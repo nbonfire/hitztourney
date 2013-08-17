@@ -10,12 +10,14 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column
 import itertools
+from pubsub import pub  
 from sortedcollection import *
 from model import *
 #from matchups import *
 #from publisher import *
 
 defaultGamesList = list()
+NextUID=0
 #
 # WEBSOCKET CHERRYPY PLUGIN
 #
@@ -29,12 +31,18 @@ class Publisher(WebSocket):
 	def __init__(self, *args, **kw):
 		WebSocket.__init__(self, *args, **kw)
 		print str(self) + "connected"
-		SUBSCRIBERS.add({'UID':len(SUBSCRIBERS),'connection':self})
-		self.send(json.dumps({'event':'UID', 'data':len(SUBSCRIBERS)}))
+		SUBSCRIBERS.add(self)
+		global NextUID
+		NextUID = NextUID + 1
+		UID = NextUID
+		
 
 	def closed(self, code, reason=None):
 		SUBSCRIBERS.remove(self)
-	"""
+	
+	def sendToMe(self, event, message):
+		self.send(json.dumps({'event':event, 'data':message}))
+
 	# I commented this out because until I figure how to get a session into the Publisher class, I'll just use ajax 
 	# to trigger the "generateGamePossibilities" 
 	def received_message(self, message):
@@ -44,18 +52,20 @@ class Publisher(WebSocket):
 		eventname = pythonmessage['event']
 		eventdata = pythonmessage['data']
 
-		if eventname == 'gettop10games':
-			generateGamePossibilities(listOfPlayers=eventdata)
+		if eventname == 'subscribe':
+			pub.subscribe(self.sendToMe, eventdata)
 			print "%s triggered successfully with data %s" % eventname, str(eventdata)
+		elif eventname =='getUID':
+			self.send(json.dumps({'event':'getUID', 'data':self.UID}))
 		else:
 			print "\nevent %s not found. Data: %s \n From message: %s\n" % eventname, str(eventdata), str(message)
 
-			"""
+			
 	#for conn in SUBSCRIBERS:
 	#    conn.send(json.dumps({"event":'leaderboard', 'data':returnString}))
 
 
-def sendMessage(event, data):
+def sendToAll(event, data):
 	#
 	for conn in SUBSCRIBERS:
 		#print "%s:%s" %(event,data)
@@ -190,11 +200,13 @@ def generateGamePossibilities(session, listOfPlayers=['Nick', 'Rosen', 'Magoo', 
 						#cls()
 						#print list(potentialGamesCollection)
 						lastupdate=timenow
-						sendMessage(event='top10games', data={'games':list(potentialGamesCollection), 'isdone':"Working...", 'percentComplete':str(iterator*100/iterations)})
+						#sendToAll(event='top10games', data={'games':list(potentialGamesCollection), 'isdone':"Working...", 'percentComplete':str(iterator*100/iterations)})
+						pub.sendMessage('top10games', message={'games':list(potentialGamesCollection), 'isdone':"Working...", 'percentComplete':str(iterator*100/iterations)} )
 		#print "\n\n\n outer iterations: %d - inner iterations: %d - guesstimate: %d"%(iterator, iterations)
 		if usesWebsocket == True:
 			defaultGamesList = list(potentialGamesCollection)
-			sendMessage(event='top10games', data={'games':list(potentialGamesCollection), 'isdone':"Done", 'percentComplete':'100'})
+			#sendToAll(event='top10games', data={'games':list(potentialGamesCollection), 'isdone':"Done", 'percentComplete':'100'})
+			pub.sendMessage('top10games', message={'games':list(potentialGamesCollection), 'isdone':"Done", 'percentComplete':'100'})
 			print 'Elapsed Time: %s seconds' % str((lastupdate-timenow).total_seconds)
 			return True
 		else:
@@ -219,6 +231,7 @@ class HitzApp(object):
 			players='{"name":"players","data":["Magoo","Rosen","White Rob","Ziplox","Drew","Crabman"]}'
 		else:
 			players=kwargs['players']
+		pub.sendMessage('checkedPlayers', message=players)
 		#print json.loads(players)['data']
 		generateGamePossibilities(session=cherrypy.request.db,listOfPlayers=json.loads(players)['data'])
 		return "True"
