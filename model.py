@@ -169,6 +169,7 @@ def getRecordsBelowSigma(session, sigma=SIGMA_CUTOFF):
 
 def getStrength(session, homeNames,awayNames):
 	#
+	# AKA the draw probability. Return value is *1000 to make it easier for output on the page.
 	# ({'name':'alice','rating':2.0},{'name':'bob','rating':1.4},{'name':'charlie','rating':3.2})
 	#
 	homeTeam=get_or_create_team(session, homeNames)
@@ -176,6 +177,15 @@ def getStrength(session, homeNames,awayNames):
 	homeRatings = homeTeam.tupleratings()
 	awayRatings = awayTeam.tupleratings()
 	return int(env.quality([homeRatings,awayRatings])*10000)
+
+def getWinProb(rA=env.Rating(), rB=env.Rating()):
+	#
+	# Using formula from https://github.com/sublee/trueskill/issues/1
+	#
+	# Needs to be determined how accurate this is... does it need half the draw percent removed?
+	deltaMu = rA.mu - rB.mu
+	rsss = sqrt(rA.sigma**2 + rB.sigma**2)
+	return trueskill.mathematics.cdf(deltaMu/rsss)
 
 def jsonbackup(session):
 	results = []
