@@ -268,7 +268,7 @@ if __name__ == "__main__":
 	#setup_all()
 	#create_all()
 	hitlist=[]
-	players = ["Adi","Bader","Ced","Gio","James","Jeff","Jesse","Jon","Kent","Koplow","Magoo","Nick","Rosen","Sean","White Rob","Ziplox", 'Drew', 'Crabman'];
+	players = ["Adi","Bader","Ced","Gio","James","Keedy","Jesse","Jon","Kent","Koplow","Magoo","Nick","Rosen","McGilloway","White Rob","Ziplox", 'Drew', 'Crabman'];
 	for player in players:
 		#Hitters.get_by_or_init(name=player)
 		currentplayer=get_or_create(session, Hitter, name=player)
