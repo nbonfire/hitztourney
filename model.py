@@ -145,11 +145,18 @@ def get_or_create_team(session, findplayers):
 	create_team = session.query(Team).filter(Team.hitters.any(Hitter.name==findplayers[0])).filter(Team.hitters.any(Hitter.name==findplayers[1])).filter(Team.hitters.any(Hitter.name==findplayers[2])).first()
 	#session.query(Team).filter(Team.players.in_()) session.query(Hitter).name.in_(session)
 	if not create_team:
-		create_team = Team()
+		#create_team = Team()
+		hittersforthisteam = []
 		for newplayer in findplayers:
-			create_team.hitters.append(get_or_create(session,Hitter,name=newplayer))
-		session.add(create_team)
-		session.commit()
+			hittersforthisteam.append(session.query(Hitter).filter_by(name=newplayer).first())
+		if len(hittersforthisteam)<3:
+			print "invalid player in list: %s" % findplayers
+			return False
+		else:
+			create_team = Team()
+			create_team.hitters = hittersforthisteam
+			session.add(create_team)
+			session.commit()
 	return create_team
 
 def getRecordsBelowSigma(session, sigma=SIGMA_CUTOFF):
@@ -264,7 +271,9 @@ if __name__ == "__main__":
 	players = ["Adi","Bader","Ced","Gio","James","Jeff","Jesse","Jon","Kent","Koplow","Magoo","Nick","Rosen","Sean","White Rob","Ziplox", 'Drew', 'Crabman'];
 	for player in players:
 		#Hitters.get_by_or_init(name=player)
-		hitlist.append(get_or_create(session, Hitter, name=player))
+		currentplayer=get_or_create(session, Hitter, name=player)
+		session.add(currentplayer)
+		hitlist.append(currentplayer)
 	session.commit()
 
 	if RESET==1:
@@ -327,7 +336,7 @@ if __name__ == "__main__":
 	#for allteam in allteams:
 		#print "-" * 20
 		#print allteam.players
-	allteams.sort(key=lambda team: team.teamrating.mu)
+	allteams.sort(key=lambda team: (team.teamrating.mu - 3*team.teamrating.sigma))
 	print allteams
  
 	# find a specific record

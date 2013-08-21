@@ -117,15 +117,15 @@ Required:
     </form>
     <div class="row" id="probability">
     <div class="col-lg-2 align-center">
-    <center><button class="btn btn-success">Away won</button></center>
+    <center><button type="button" value="away" class="pickwinner btn btn-success" href="#">Away won</button></center>
     </div>
     <div class="col-lg-8">
     <div class="alert alert-info">
-    Haven't calculated the probability yet.<span class="probabilityalert"></span>
+    <span class="probabilityalert">Haven't calculated the probability yet.</span>
     </div>
     </div>
     <div class="col-lg-2 align-center">
-    <button class="btn btn-success">Home won</button>
+    <button type="button" value="home" class="pickwinner btn btn-success" href="#">Home won</button>
     </div>
     </div>
     <div class="row">
@@ -208,6 +208,7 @@ Required:
         new_uri += "/ws";
         var conn = new WebSocket(new_uri);
         var callbacks = {};
+        var myself = this;
 
         this.bind = function(event_name, callback){
                 callbacks[event_name] = callbacks[event_name] || [];
@@ -245,6 +246,8 @@ Required:
         conn.onopen = function(){
           dispatch('open',null);
           console.log('websocket open');
+          myself.trigger('subscribe', 'topgames')
+          myself.trigger('subscribe', 'currentgamedrawprobability')
         }
 
         var dispatch = function(event_name, message){
@@ -261,7 +264,7 @@ Required:
 
   
   var server = new ServerEventsDispatcher();
-  server.bind('top10games', function(evt){
+  server.bind('topgames', function(evt){
       //var table = document.getElementByID("top10gamestable");
       var tbody = $('#top10gamestable').find("tbody")[0];
       var rows = tbody.getElementsByTagName("tr");
@@ -316,7 +319,26 @@ Required:
       });*/
       return false;
   });
-  server.trigger('subscribe', 'top10games');
+  server.bind('currentgamedrawprobability', function(evt){
+    /*
+     *
+     * SHould be in the form {
+     * 'event':'currentgamedrawprobability',
+     * 'data':{'awayNames':["player1","player2","player3"],
+               'homeNames':["player4","player5","player6"],
+               'strength': '63.28',
+               'teamstrength':'64.30' <-- not used unless teamsigma is way low.
+          }
+    
+        }
+     *
+     */
+     console.log(evt['strength'])
+     $(".probabilityalert").parent().addClass("alert-info")
+     $(".probabilityalert").parent().removeClass("alert-danger")
+     $(".probabilityalert").html( "Draw probability: "+evt['strength']);
+  })
+  
       
   /*function recalculate() {
         var form = $("#names")
@@ -387,7 +409,7 @@ Required:
         
       })
       $('select').change(function(){
-        var str = "";
+        
         var namelist = [];
         var awayteamlist = [];
         var hometeamlist = [];
@@ -408,6 +430,73 @@ Required:
           hometeamlist[index]=$(this).text();
           
         });
+        if (shouldWeSelect == true){
+          $.ajax({
+            type: "GET",
+            url: "/drawprobability",
+            data: "awayteam="+JSON.stringify(awayteamlist)+"&hometeam="+JSON.stringify(hometeamlist),
+        /*success: function(data){
+      
+          $("#"+match).html(data);
+      
+          return false;
+        }*/
+
+        });
+        }
+        else {
+          $(".probabilityalert").html("Invalid match, make sure all the players are different");
+          $(".probabilityalert").parent().removeClass("alert-info")
+          $(".probabilityalert").parent().addClass("alert-danger")
+        }
+        console.log(namelist);
+        console.log(awayteamlist);
+        console.log(hometeamlist);
+      });
+
+      $('.pickwinner').click(function(){
+        
+        var namelist = [];
+        var awayteamlist = [];
+        var hometeamlist = [];
+        var shouldWeSelect = true;
+        var thebutton = this;
+        $(".awaychoice option:selected").each(function(index){
+          for (l=0;l<index;l++){
+            if ($(this).text() ==namelist[l]) shouldWeSelect= false;
+          }
+          namelist[index]=$(this).text();
+          awayteamlist[index]=$(this).text();
+          
+        });
+        $(".homechoice option:selected").each(function(index){
+          for (l=0;l<index+3;l++){
+            if ($(this).text() ==namelist[l]) shouldWeSelect= false;
+          }
+          namelist[index+3]=$(this).text();
+          hometeamlist[index]=$(this).text();
+          
+        });
+        console.log($(this).val())
+        if (shouldWeSelect == true){
+          $.ajax({
+            type: "GET",
+            url: "/pickwinner",
+            data: "awayteam="+JSON.stringify(awayteamlist)+"&hometeam="+JSON.stringify(hometeamlist)+"&winner="+$(thebutton).val(),
+        /*success: function(data){
+      
+          $("#"+match).html(data);
+      
+          return false;
+        }*/
+
+        });
+        }
+        else {
+          $(".probabilityalert").html("Invalid match, make sure all the players are different");
+          $(".probabilityalert").parent().removeClass("alert-info")
+          $(".probabilityalert").parent().addClass("alert-danger")
+        }
         console.log(namelist);
         console.log(awayteamlist);
         console.log(hometeamlist);

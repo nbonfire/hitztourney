@@ -40,7 +40,9 @@ class Publisher(WebSocket):
 	def closed(self, code, reason=None):
 		SUBSCRIBERS.remove(self)
 	
-	def sendToMe(self, event, message):
+	def sendToMe(self, event, message):#event, message):
+		#print event
+		#print message
 		self.send(json.dumps({'event':event, 'data':message}))
 
 	# I commented this out because until I figure how to get a session into the Publisher class, I'll just use ajax 
@@ -53,8 +55,8 @@ class Publisher(WebSocket):
 		eventdata = pythonmessage['data']
 
 		if eventname == 'subscribe':
-			pub.subscribe(self.sendToMe, eventdata)
-			print "%s triggered successfully with data %s" % eventname, str(eventdata)
+			pub.subscribe(self.sendToMe, str(eventdata))
+			print "%s triggered successfully with data %s" % (eventname, eventdata)
 		elif eventname =='getUID':
 			self.send(json.dumps({'event':'getUID', 'data':self.UID}))
 		else:
@@ -201,12 +203,12 @@ def generateGamePossibilities(session, listOfPlayers=['Nick', 'Rosen', 'Magoo', 
 						#print list(potentialGamesCollection)
 						lastupdate=timenow
 						#sendToAll(event='top10games', data={'games':list(potentialGamesCollection), 'isdone':"Working...", 'percentComplete':str(iterator*100/iterations)})
-						pub.sendMessage('top10games', message={'games':list(potentialGamesCollection), 'isdone':"Working...", 'percentComplete':str(iterator*100/iterations)} )
+						pub.sendMessage('topgames', event="topgames", message=({'games':list(potentialGamesCollection), 'isdone':"Working...", 'percentComplete':str(iterator*100/iterations)} ))
 		#print "\n\n\n outer iterations: %d - inner iterations: %d - guesstimate: %d"%(iterator, iterations)
 		if usesWebsocket == True:
 			defaultGamesList = list(potentialGamesCollection)
 			#sendToAll(event='top10games', data={'games':list(potentialGamesCollection), 'isdone':"Done", 'percentComplete':'100'})
-			pub.sendMessage('top10games', message={'games':list(potentialGamesCollection), 'isdone':"Done", 'percentComplete':'100'})
+			pub.sendMessage('topgames', event="topgames", message=({'games':list(potentialGamesCollection), 'isdone':"Done", 'percentComplete':'100'}))
 			print 'Elapsed Time: %s seconds' % str((lastupdate-timenow).total_seconds)
 			return True
 		else:
@@ -227,7 +229,7 @@ class HitzApp(object):
 	@cherrypy.expose
 	def update(self, **kwargs):
 		#players="{'players':['Nick', 'Drew', 'Ced', 'Magoo', 'Rosen', 'White Rob', 'Crabman']}"
-		if len(kwargs['players'])<6:
+		if len(json.loads(kwargs['players']))<6:
 			players='{"name":"players","data":["Magoo","Rosen","White Rob","Ziplox","Drew","Crabman"]}'
 		else:
 			players=kwargs['players']
@@ -235,6 +237,38 @@ class HitzApp(object):
 		#print json.loads(players)['data']
 		generateGamePossibilities(session=cherrypy.request.db,listOfPlayers=json.loads(players)['data'])
 		return "True"
+	@cherrypy.expose
+	def pickwinner(self, **kwargs):
+		print kwargs
+	@cherrypy.expose
+	def drawprobability(self, **kwargs):
+		hometeam = json.loads(kwargs['hometeam'])
+		awayteam = json.loads(kwargs['awayteam'])
+		if (get_or_create_team(session=cherrypy.request.db, findplayers=awayteam) and get_or_create_team(session=cherrypy.request.db, findplayers=hometeam)):
+			message={
+				'awayNames':awayteam, 
+				'homeNames':hometeam, 
+				'strength':float(getStrength(
+					session=cherrypy.request.db, 
+					homeNames=hometeam, 
+					awayNames=awayteam
+					))/100.0
+				}
+			pub.sendMessage('currentgamedrawprobability', 
+				
+				
+				event='currentgamedrawprobability',
+				message=message
+				
+			)
+			"""
+			{'awayNames':["player1","player2","player3"],
+               'homeNames':["player4","player5","player6"],
+               'strength': '63.28',
+               'teamstrength':'64.30'
+			"""
+		else:
+			print "invalid kwargs -> %s, %d, %d" % (kwargs, len(kwargs['awayteam']), len(kwargs['hometeam']))
 
 	@cherrypy.expose
 	def ws(self):
