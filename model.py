@@ -298,7 +298,7 @@ if __name__ == "__main__":
 		{'away':['White Rob','Crabman','Adi'],'home':['Ziplox','Nick','Rosen'],'winner':'away', 'date':datetime.datetime(2013,7,27)},
 		{'away':['Ziplox','Nick','Drew'],'home':['White Rob','Adi','Crabman'],'winner':'home', 'date':datetime.datetime(2013,7,27)},              
 		{'away':['Ziplox','Rosen','Drew'],'home':['White Rob','Adi','Crabman'],'winner':'home', 'date':datetime.datetime(2013,7,27)},  
-		#{'away':['','',''],'home':['','',''],'winner':''},    
+		#{'away':['','',''],'home':['','',''],'winner':'', 'date':datetime.datetime(yyyy,mm,dd)},    
 		]
 		# Adding records
 	
