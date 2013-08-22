@@ -14,7 +14,7 @@ overallteamenv=TrueSkill()
 currentseasonstartdate=datetime.datetime(2013,4,21)
 
 
-RESET=1
+RESET=0
 SIGMA_CUTOFF=8.0
 
 Base = declarative_base()
