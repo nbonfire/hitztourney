@@ -14,7 +14,7 @@ overallteamenv=TrueSkill()
 currentseasonstartdate=datetime.datetime(2013,4,21)
 
 
-RESET=0
+RESET=1
 SIGMA_CUTOFF=8.0
 
 Base = declarative_base()
@@ -221,7 +221,7 @@ def jsonbackup(session):
 	for game in allgames:
 		results.append({'away':game.awayteam.listnames(), 'home':game.hometeam.listnames(), 'winner': game.winposition(), 'score':{'away':game.awaypoints,'home':game.homepoints}, 'date': str(game.date)})
 
-	with io.open('gamesbackup.txt', 'w', encoding='utf-8') as f:
+	with io.open('gamesbackup-%s.txt'% str(datetime.date.today()), 'w', encoding='utf-8') as f:
 		f.write(unicode(json.dumps(results, ensure_ascii=False)))
 	return json.dumps(results)
 

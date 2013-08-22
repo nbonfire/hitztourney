@@ -244,7 +244,8 @@ class HitzApp(object):
 		hometeam=json.loads(kwargs['home'])
 		awayteam=json.loads(kwargs['away'])
 		winner = kwargs['winner']
-		completeGame(session=cherrypy.request.db, homeTeam=hometeam, awayTeam=awayteam, winner=winner)
+		datePlayed=kwargs['date']
+		completeGame(session=cherrypy.request.db, homeTeam=hometeam, awayTeam=awayteam, winner=winner, datePlayed=datetime.datetime.strptime(datePlayed, '"%Y-%m-%d"'))
 		print "%s vs %s %s won" %(awayteam, hometeam, winner)
 	@cherrypy.expose
 	def drawprobability(self, **kwargs):
