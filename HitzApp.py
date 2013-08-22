@@ -229,17 +229,23 @@ class HitzApp(object):
 	@cherrypy.expose
 	def update(self, **kwargs):
 		#players="{'players':['Nick', 'Drew', 'Ced', 'Magoo', 'Rosen', 'White Rob', 'Crabman']}"
-		if len(json.loads(kwargs['players']))<6:
-			players='{"name":"players","data":["Magoo","Rosen","White Rob","Ziplox","Drew","Crabman"]}'
+		playernames=json.loads(kwargs['players'])
+		print playernames
+		if len(playernames['data'])<6:
+			players=["Magoo","Rosen","White Rob","Ziplox","Drew","Crabman"]
 		else:
-			players=kwargs['players']
+			players=playernames['data']
 		pub.sendMessage('checkedPlayers', message=players)
 		#print json.loads(players)['data']
-		generateGamePossibilities(session=cherrypy.request.db,listOfPlayers=json.loads(players)['data'])
+		generateGamePossibilities(session=cherrypy.request.db,listOfPlayers=players)
 		return "True"
 	@cherrypy.expose
 	def pickwinner(self, **kwargs):
-		print kwargs
+		hometeam=json.loads(kwargs['home'])
+		awayteam=json.loads(kwargs['away'])
+		winner = kwargs['winner']
+		completeGame(session=cherrypy.request.db, homeTeam=hometeam, awayTeam=awayteam, winner=winner)
+		print "%s vs %s %s won" %(awayteam, hometeam, winner)
 	@cherrypy.expose
 	def drawprobability(self, **kwargs):
 		hometeam = json.loads(kwargs['hometeam'])

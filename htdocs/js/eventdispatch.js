@@ -1,4 +1,4 @@
-$(function(){
+
     
   /*
         Ismael Celis 2010
@@ -14,7 +14,7 @@ $(function(){
         // broadcast events to all connected users
         socket.trigger( 'some_event', {name: 'ismael', message : 'Hello world'} );
   */
-  var ServerEventsDispatcher = function( ){
+  var ServerEventsDispatcher = function(triggers ){
         var loc = window.location, new_uri;
         if (loc.protocol === "https:") {
           new_uri = "wss:";
@@ -25,6 +25,7 @@ $(function(){
         new_uri += "/ws";
         var conn = new WebSocket(new_uri);
         var callbacks = {};
+        var myself = this;
 
         this.bind = function(event_name, callback){
                 callbacks[event_name] = callbacks[event_name] || [];
@@ -33,7 +34,8 @@ $(function(){
         };
 
         this.trigger = function(event_name, data){
-                var payload = JSON.stringify([event_name, data]);
+                var payload = JSON.stringify({'event':event_name, 'data':data});
+                console.log(payload)
                 conn.send( payload ); // <= send JSON data to socket server
                 return this;
         };
@@ -41,27 +43,41 @@ $(function(){
         // dispatch to the right handlers
         conn.onmessage = function(evt) {
                 data = evt.data;
-
-                if ( !data.charCodeAt(0) )
+                console.log(data);
+                if ( !data.charCodeAt(0) ){
+                        console.log(data.charCodeAt(0));
+                        console.log(data.substr(1));
                         data = data.substr(1);
+                      }
 
                 var data = JSON.parse( data ),
-                        event_name = data[0],
-                        message = data[1];
+                        event_name = data['event'];
+                        console.log(data['event']);
+                        message = data['data'];
+                        console.log(data['data']);
                 dispatch(event_name, message)
+                console.log(event_name);
         };
 
         conn.onclose = function(){dispatch('close',null)}
-        conn.onopen = function(){dispatch('open',null)}
+        conn.onopen = function(){
+          dispatch('open',null);
+          console.log('websocket open');
+          for (var h=0;h<triggers.length;h++){
+            myself.trigger('subscribe', triggers[h])
+          }
+        }
 
         var dispatch = function(event_name, message){
                 var chain = callbacks[event_name];
-                if(typeof chain == 'undefined') $(event_name).html(message)/*return*/; // no callbacks for this event
+                console.log(event_name);
+                if(typeof chain == 'undefined') return; // no callbacks for this event
                 for(var i = 0; i < chain.length; i++){
-                        chain[i]( message )
+                        chain[i]( message );
                 }
+                
         }
-  };
+  }
   
 
   /*var server = new ServerEventsDispatcher();
@@ -86,37 +102,3 @@ $(function(){
       $(this).parent().fadeIn("slow");
     }
   });*/
-  var server = new ServerEventsDispatcher();
-    	server.bind('top10games', function(evt){
-   		var table = document.getElementByID("top10gamestable");
-   		var tbody = table.getElementsByTagName("tbody")[0];
-   		var rows = tbody.getElementsByTagName("tr");
-
-   		function populateRow(index, data )
-   		{
-   			var row = rows[index];
-   			var cells = row.getElementsByTagName("td")
-   			var awayTeamCell = cells[1];
-   			var homeTeamCell = cells[3];
-   			var strengthCell = cells[4];
-   			$(awayTeamCell).html(data['away']);
-   			$(homeTeamCell).html(data['home']);
-   			$(strengthCell).html(data['strength']);
-
-   		}
-    		
-
-   		for(i=0;i<evt.data.length;i++){
-   			populateRow(i, evt.data['games'][i], True)
-   		}
-   		$("#working").html = evt.data['isdone']
-
-  });
-  		
-  function recalculate() {
-  			var form = document.getElementByID("names")
-  			var names = form.getElementsByTagName("input")
-  			server.trigger('gettop10games', names)
-  }
-  return false;
-});

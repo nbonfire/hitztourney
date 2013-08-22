@@ -24,7 +24,7 @@ Required:
     <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css">
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
     <script type="text/javascript" src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
-    <!--script src="http://127.0.0.1:8080/js/eventdispatch.js"></script-->
+    <script type="text/javascript" src="../js/eventdispatch.js"></script>
 
 
 
@@ -46,6 +46,9 @@ Required:
 
     <div class="container">
     <form class="form-inline" role="form">
+    <div class="row">
+    <div class=".col-md-4 .col-md-offset-8">
+    </div>
     <div class="row">
     <div class="col-lg-6">
       <div class="panel">
@@ -89,7 +92,7 @@ Required:
   <div class="panel-body">
   <div class="row">
   <div class="col-lg-4">
-    <select class=" form-control homechoice">
+    <select class="form-inline form-control homechoice">
 % for player in players:
   <option value="${player['name']}">${player['name']}</option>
     % endfor
@@ -116,17 +119,24 @@ Required:
     </div>
     </form>
     <div class="row" id="probability">
+    
     <div class="col-lg-2 align-center">
-    <center><button type="button" value="away" class="pickwinner btn btn-success" href="#">Away won</button></center>
+    <input type="text" class="form-control form-inline" id="awayscore" placeholder="Away Score">
+    <center><button type="button" value="away" class="pickwinner btn btn-success form-inline" href="#">Away won</button></center>
     </div>
     <div class="col-lg-8">
     <div class="alert alert-info">
-    <span class="probabilityalert">Haven't calculated the probability yet.</span>
+    <span class="probabilityalert">Choose some teams to calculate the probability of a draw.</span>
     </div>
+    <center><button type="button" value="swap" class="swap btn btn-info form-inline" href="#">Swap sides</button>
     </div>
     <div class="col-lg-2 align-center">
-    <button type="button" value="home" class="pickwinner btn btn-success" href="#">Home won</button>
+    <input type="text" class="form-control form-inline" id="homescore" placeholder="Home Score">
+    <center><button type="button" value="home" class="pickwinner btn btn-success form-inline" href="#">Home won</button></center>
+    
     </div>
+    
+    </form>
     </div>
     <div class="row">
     <div class="col-lg-8">
@@ -167,7 +177,7 @@ Required:
           % if player['isChecked']:
             checked
           % endif
-         class="hitters"> <a href="playerstats/${player['name']}">${player['name']}</a>
+         class="hitters"> <a href="playerstats/${player['name']}">${player['name']} - <span value="${player['name']}" class="playerrank">${player['playerrank']}</span> (Lifetime: <span value="${player['name']}" class="overallplayerrank">${player['overallplayerrank']}</span>)</a>
     		</label>
     		% endfor
     		<div class="form-actions">
@@ -183,87 +193,11 @@ Required:
   $(function(){
       
     
-  /*
-        Ismael Celis 2010
-        Simplified WebSocket events dispatcher (no channels, no users)
-
-        var socket = new ServerEventsDispatcher();
-
-        // bind to server events
-        socket.bind('some_event', function(data){
-                alert(data.name + ' says: ' + data.message)
-        });
-
-        // broadcast events to all connected users
-        socket.trigger( 'some_event', {name: 'ismael', message : 'Hello world'} );
-  */
-  var ServerEventsDispatcher = function( ){
-        var loc = window.location, new_uri;
-        if (loc.protocol === "https:") {
-          new_uri = "wss:";
-        } else {
-          new_uri = "ws:";
-        }
-        new_uri += "//" + loc.host; //loc.pathname taken out
-        new_uri += "/ws";
-        var conn = new WebSocket(new_uri);
-        var callbacks = {};
-        var myself = this;
-
-        this.bind = function(event_name, callback){
-                callbacks[event_name] = callbacks[event_name] || [];
-                callbacks[event_name].push(callback);
-                return this;// chainable
-        };
-
-        this.trigger = function(event_name, data){
-                var payload = JSON.stringify({'event':event_name, 'data':data});
-                console.log(payload)
-                conn.send( payload ); // <= send JSON data to socket server
-                return this;
-        };
-
-        // dispatch to the right handlers
-        conn.onmessage = function(evt) {
-                data = evt.data;
-                console.log(data);
-                if ( !data.charCodeAt(0) ){
-                        console.log(data.charCodeAt(0));
-                        console.log(data.substr(1));
-                        data = data.substr(1);
-                      }
-
-                var data = JSON.parse( data ),
-                        event_name = data['event'];
-                        console.log(data['event']);
-                        message = data['data'];
-                        console.log(data['data']);
-                dispatch(event_name, message)
-                console.log(event_name);
-        };
-
-        conn.onclose = function(){dispatch('close',null)}
-        conn.onopen = function(){
-          dispatch('open',null);
-          console.log('websocket open');
-          myself.trigger('subscribe', 'topgames')
-          myself.trigger('subscribe', 'currentgamedrawprobability')
-        }
-
-        var dispatch = function(event_name, message){
-                var chain = callbacks[event_name];
-                console.log(event_name);
-                if(typeof chain == 'undefined') return; // no callbacks for this event
-                for(var i = 0; i < chain.length; i++){
-                        chain[i]( message );
-                }
-                
-        }
-  }
+  
   
 
   
-  var server = new ServerEventsDispatcher();
+  var server = new ServerEventsDispatcher(['topgames', 'currentgamedrawprobability']);
   server.bind('topgames', function(evt){
       //var table = document.getElementByID("top10gamestable");
       var tbody = $('#top10gamestable').find("tbody")[0];
@@ -453,6 +387,28 @@ Required:
         console.log(awayteamlist);
         console.log(hometeamlist);
       });
+      $('.swap').click(function(){
+        var awayteamlist = [];
+        var hometeamlist = [];
+        $(".awaychoice option:selected").each(function(index){
+          
+            awayteamlist[index]=$(this).val();
+
+          
+        })
+        //console.log(awayteamlist)
+        $(".homechoice option:selected").each(function(index){
+          
+            hometeamlist[index]=$(this).val();
+          
+        })
+        //console.log(hometeamlist)
+        //$('.awaychoice').slice(index).first().val($(this).html())
+        for (l=0;l<3;l++){
+          $('.awaychoice').slice(l).first().val(hometeamlist[l])
+          $('.homechoice').slice(l).first().val(awayteamlist[l])
+        }
+      })
 
       $('.pickwinner').click(function(){
         
@@ -482,7 +438,7 @@ Required:
           $.ajax({
             type: "GET",
             url: "/pickwinner",
-            data: "awayteam="+JSON.stringify(awayteamlist)+"&hometeam="+JSON.stringify(hometeamlist)+"&winner="+$(thebutton).val(),
+            data: "away="+JSON.stringify(awayteamlist)+"&home="+JSON.stringify(hometeamlist)+"&winner="+$(thebutton).val()+"&date="+JSON.stringify($('#dateplayed').val()),
         /*success: function(data){
       
           $("#"+match).html(data);
