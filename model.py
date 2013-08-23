@@ -1,5 +1,5 @@
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import ForeignKey, Table, Text, create_engine, Column, Integer, String, PickleType, DateTime
+from sqlalchemy import ForeignKey, Table, Text, create_engine, Column, Integer, String, PickleType, DateTime, func
 from sqlalchemy.orm import relationship, backref, sessionmaker
 import json, io, pickle, datetime, itertools
 
@@ -146,6 +146,8 @@ class Game(Base):
 			return "away"
 		else:
 			return "can't tell - winner: %s, home: %s, away: %s, names: %s" % (self.winner_id, self.hometeam_id, self.awayteam_id, self.winner.names())
+	def __repr__(self):
+		return "<%s -  %s vs %s - %s won>" %(self.date, self.awayteam, self.hometeam, self.winner)
 
 
 
@@ -438,11 +440,16 @@ if __name__ == "__main__":
  
 	# find a specific record
 
-	qry = session.query(Hitter).filter_by(name=u'Nick')
-	record = qry.first()
-	print "%s" % (record.hitzskill())
-	gamesbackup=jsonbackup(session)
-	print gamesbackup
+	qry = session.query(Hitter, func.count(Team.winninggames)).filter_by(name=u'Nick').all()
+	#record = qry.first()
+	#nickteams = record.teams.winninggames
+	
+	#print len(record.teams)
+	#print nickteams
+	print qry
+	#print "%s" % (record.hitzskill())
+	#gamesbackup=jsonbackup(session)
+	#print gamesbackup
 	#collectionOfGames= generateGamePermutations([i.name for i in recordsbelowsigma], 20)
 	#cls()
 	#print list(collectionOfGames)

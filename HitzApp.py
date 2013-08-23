@@ -224,7 +224,8 @@ class HitzApp(object):
 		if not user:
 			return Template(filename='htdocs/chooseuserforstats.html', input_encoding='utf-8').render(userlist = generateUserList())
 		else:
-			return Template(filename='htdocs/stats.html', input_encoding='utf-8').render(user=user,rival=rival(user),bff=bff(user),ratingMu=ratingMu(user),ratingSigma=ratingSigma(user),bestTeam=bestTeam(user),rank=rank(user),upcominggames=upcomingGames(user))
+			statssubject=cherrypy.request.db.query(Hitter).filter(name==user).first()
+			return Template(filename='htdocs/stats.html', input_encoding='utf-8').render(user=statssubject,rival=rival(cherrypy.request.db, user),bff=bff(cherrypy.request.db, user),rating=statssubject.rating,bestTeam=bestTeam(cherrypy.request.db, user),hitzskill=statssubject.hitzskill(),upcominggames=upcomingGames(cherrypy.request.db, user))
 #Template(filename='htdocs/standaloneleaderboard.html', input_encoding = 'utf-8').render(leaderboardList=leaderboardBody, nextmatch=nextMatch, matchlog = generateMatchLog())
 	@cherrypy.expose
 	def update(self, **kwargs):
