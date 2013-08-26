@@ -220,13 +220,25 @@ class HitzApp(object):
 		return Template(filename='htdocs/guessgames.html', input_encoding = 'utf-8').render(topGames=getDefaultGamesList(cherrypy.request.db),players=getPlayersForTemplate(session=cherrypy.request.db))
 
 	@cherrypy.expose
-	def playerstats(self, user):
+	def playerstats(self, user=None):
 		if not user:
-			return Template(filename='htdocs/chooseuserforstats.html', input_encoding='utf-8').render(userlist = generateUserList())
+			return Template(filename='htdocs/chooseuserforstats.html', input_encoding='utf-8').render(players = getUserList(cherrypy.request.db))
 		else:
-			statssubject=cherrypy.request.db.query(Hitter).filter(name==user).first()
-			return Template(filename='htdocs/stats.html', input_encoding='utf-8').render(user=statssubject,rival=rival(cherrypy.request.db, user),bff=bff(cherrypy.request.db, user),rating=statssubject.rating,bestTeam=bestTeam(cherrypy.request.db, user),hitzskill=statssubject.hitzskill(),upcominggames=upcomingGames(cherrypy.request.db, user))
+			
+			statssubject=cherrypy.request.db.query(Hitter).filter(Hitter.name==user).first()
+			return Template(filename='htdocs/stats.html', input_encoding='utf-8').render(
+				user=statssubject,
+				rivals=rivals(cherrypy.request.db, statssubject),
+				bffs=bffs(cherrypy.request.db, statssubject),
+				rating=statssubject.rating,
+				bestTeams=bestTeams(cherrypy.request.db, statssubject),
+				hitzskill=statssubject.hitzskill(),
+				currentrecord=currentSeasonRecordString(cherrypy.request.db, statssubject),
+				gamehistory=getGameHistoryForUser(cherrypy.request.db, statssubject, currentseasonstartdate)) #"""upcomingGames(cherrypy.request.db, user)"""
 #Template(filename='htdocs/standaloneleaderboard.html', input_encoding = 'utf-8').render(leaderboardList=leaderboardBody, nextmatch=nextMatch, matchlog = generateMatchLog())
+	@cherrypy.expose
+	def history(self):
+		return Template(filename='htdocs/history.html', input_encoding='utf-8').render(gamesList=cherrypy.request.db.query(Game).all())
 	@cherrypy.expose
 	def update(self, **kwargs):
 		#players="{'players':['Nick', 'Drew', 'Ced', 'Magoo', 'Rosen', 'White Rob', 'Crabman']}"

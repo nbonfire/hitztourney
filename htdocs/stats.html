@@ -31,6 +31,7 @@ Required:
 
 
     <body>
+      <div class="container">
     <div class="navbar">
         <a href="#" class="navbar-brand">Hitz</a>
         <ul class="nav navbar-nav">
@@ -38,34 +39,81 @@ Required:
             <a href="#">Home</a>
           </li>
           <li class="active">
-            <a href="#">Stats</a>
+            <a href="../playerstats">Stats</a>
           </li>
           <li>
-            <a href="#">Games</a>
+            <a href="../games">Games</a>
           </li>
         </ul>
     </div>
+    <div class="jumbotron">
+  <div class="container">
+    <h1>${user.name}</h1>
+    <p>Current season record: ${currentrecord}</p>
+    <p>Overall record: ${user.recordstring()}</p>
+    <!--p><a class="btn btn-primary btn-lg">Learn more</a></p-->
+  </div>
+</div>
+    <div class="row">
+    
+      <div class="col-lg-6">
+        <div class="panel text-right panel-default">
+          <div class="panel-heading"><h3 class="panel-title">BFFs</h3>
+          </div>
+          <p class="text-right"><center><table class="table"><tbody>
+            % for bff in bffs:
+  <tr><td><a href="/playerstats/${bff['name']}">${bff['name']}</a><td>${bff['skill']}</td><td>(Lifetime:${bff['overallskill']})</td><td>Wins: ${bff['wincount']}</td></tr>
+  % endfor
+          </table></p>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="panel">
+          <div class="panel-heading"><h3 class="panel-title">Rivals</h3>
+          </div>
+          <p class="text-right"><center><table class="table"><tbody>
+            % for rival in rivals:
+  <tr><td><a href="/playerstats/${rival['name']}">${rival['name']}</a><td>${rival['skill']}</td><td>(Lifetime:${rival['overallskill']})</td><td>Wins: ${rival['wincount']}</td></tr>
+  % endfor
+          </table></p>
+        </div>
+      </div>
+      
+    </div>
+    <div class="row">
+    
+      <div class="col-lg-6">
+        <div class="panel text-right panel-default">
+          <div class="panel-heading text-right"><h3 class="panel-title">Best Teams</h3>
+          </div>
+          <p class="text-right"><center><table class="table"><tbody>
+            % for team in bestTeams:
+  <tr><td>${team['names']}<td>${team['teamskill']}</td><td>(Lifetime:${team['overallteamskill']})</td><td>Wins: ${team['wincount']}</td></tr>
+  % endfor
+          </table></p>
+        </div>
+      </div>
+      
+      <div class="col-lg-6">
+        <div class="panel">
+          <div class="panel-heading"><h3 class="panel-title">Game History</h3>
+          </div>
+          <p class="text-right"><center><table class="table"><tbody>
+            % for game in gamehistory:
+  <tr><td>${game['away'][0]}, ${game['away'][1]}, ${game['away'][2]}</td><td>vs</td><td>${game['home'][0]}, ${game['home'][1]}, ${game['home'][2]}</td><td>${game['winstatus']}</td></tr>
+            % endfor
+          </table></p>
+        </div>
+      </div>
+      
+    </div>
 
-      <div class="row">
-  <div class="col-12 col-lg-8">Rival</div>
-  <div class="col-6 col-lg-4 text-right">${rival}</div>
-</div>
-<div class="row">
-  <div class="col-12 col-lg-8">BFF</div>
-  <div class="col-6 col-lg-4 text-right"><a href="/stats/${bff['name']}">${bff['name']} - ${bff['rating']} - (Lifetime:${bff['overallrating']}<a></div>
-</div>
-<div class="row">
-  <div class="col-12 col-lg-6">Best Team</div>
-  <div class="col-6 col-lg-6 text-right">${bestTeam}</div>
-</div>
+
 %if upcomingGames!=0:
 <div class="row">
   <div class="col-12 col-lg-4">Upcoming:</div>
   <div class="col-12 col-lg-8 text-right"><table class="table table-striped table-condensed">
-  % for game in upcomingGames:
-  
-  	  <tr class='text-right success ${a.quality}'>${a.away} vs ${a.home}</tr>
-  							  % endfor
+
   </table>
   </div>
 </div>

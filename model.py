@@ -37,8 +37,24 @@ class Hitter(Base):
 		return float(int((self.rating.mu - 3.0*self.rating.sigma)*100))/100.0
 	def overallhitzskill(self):
 		return float(int((self.overallrating.mu - 3.0*self.overallrating.sigma)*100))/100.0
+	def recordstring(self, date=currentseasonstartdate):
+		winninggames=0
+		totalgames=0
+		for team in self.teams:
+			totalgames=totalgames+len(team.homegames)+len(team.awaygames)
+			winninggames=winninggames+len(team.winninggames)
+		return "%d - %d" %(winninggames, (totalgames-winninggames))
 	def __repr__(self):
 		return "<%s, %s, %s>" % (self.name, self.lastGamePlayed, str(self.rating.mu - 3.0*self.rating.sigma))
+	def shortdict(self):
+		return {
+			'name':self.name,
+			'record':self.recordstring(),
+			'skill':self.hitzskill(),
+			'overallskill':self.overallhitzskill()
+		}
+
+
 
 hitter_team_table = Table('hitter_team', Base.metadata,
 	Column('team_id', Integer, ForeignKey('teams.id')),
@@ -74,6 +90,8 @@ class Team(Base):
 		return tuple(ratingslist)
 	def teamskill(self):
 		return (self.teamrating.mu - 3.0*self.teamrating.sigma)
+	def overallteamskill(self):
+		return (self.overallteamrating.mu - 3.0*self.overallteamrating.sigma)
 	def setdatelastplayed(self, datePlayed=datetime.datetime.today()):
 		
 		for player in self.hitters:
@@ -88,6 +106,8 @@ class Team(Base):
 		return comparedate
 	def listnames(self):
 		return "%s, %s, %s"% (self.hitters[0].name, self.hitters[1].name, self.hitters[2].name)
+	def listofnames(self):
+		return [self.hitters[0].name, self.hitters[1].name, self.hitters[2].name]
 	def getteamrating(self):
 		sumindividual=0.0
 		for player in self.hitters:
@@ -98,6 +118,16 @@ class Team(Base):
 			return avgindividual
 		else:
 			return self.teamskill()
+	def getoverallteamrating(self):
+		sumindividual=0.0
+		for player in self.hitters:
+			sumindividual=sumindividual+player.overallhitzskill()
+		avgindividual= sumindividual/len(self.hitters)
+		
+		if avgindividual>self.overallteamskill():
+			return avgindividual
+		else:
+			return self.overallteamskill()
 		
 
 class Game(Base):
@@ -148,6 +178,17 @@ class Game(Base):
 			return "can't tell - winner: %s, home: %s, away: %s, names: %s" % (self.winner_id, self.hometeam_id, self.awayteam_id, self.winner.names())
 	def __repr__(self):
 		return "<%s -  %s vs %s - %s won>" %(self.date, self.awayteam, self.hometeam, self.winner)
+	def _asdict(self):
+		return {
+			'away':self.awayteam.listofnames(),
+			'home':self.hometeam.listofnames(),
+			'winner':self.winposition(),
+			'date':str(self.date),
+			'score':{
+						'home':self.homepoints,
+						'away':self.awaypoints
+					}
+		}
 
 
 
@@ -221,7 +262,7 @@ def jsonbackup(session):
 	allgames = session.query(Game).all()
 
 	for game in allgames:
-		results.append({'away':game.awayteam.listnames(), 'home':game.hometeam.listnames(), 'winner': game.winposition(), 'score':{'away':game.awaypoints,'home':game.homepoints}, 'date': str(game.date)})
+		results.append(game._asdict())
 
 	with io.open('gamesbackup-%s.txt'% str(datetime.date.today()), 'w', encoding='utf-8') as f:
 		f.write(unicode(json.dumps(results, ensure_ascii=False)))
@@ -321,6 +362,115 @@ def getPlayersForTemplate(session, checkedPlayers=['Nick', 'Rosen', 'Magoo', 'Wh
 		names.append({'name':player.name, 'isChecked': isChecked, 'playerrank':player.hitzskill(), 'overallplayerrank':player.overallhitzskill()} )
 	names.sort(key=lambda player: player['playerrank'], reverse=True)
 	return names
+def getUserList(session):
+	players=sorted(session.query(Hitter).all())
+	listofplayers=[]
+	for player in players:
+		listofplayers.append(player.shortdict())
+	listofplayers.sort(key=lambda k: k['skill'], reverse=True)
+	
+	return listofplayers
+	#return [item for sublist in session.query(Hitter.name).all() for item in sublist] 
+def getGameHistoryForUser(session, hitterObject, date=datetime.datetime(2013,1,1)):
+	gameids=session.query(Game.id).join(Game.awayteam).join(Team.hitters).filter(
+		Team.hitters.contains(hitterObject)).filter(Game.date>date).distinct(
+		).all() + session.query(Game.id).join(Game.hometeam).join(Team.hitters).filter(Team.hitters.contains(
+		hitterObject)).filter(Game.date>date).distinct().all()
+	gameslist = []
+	for game in session.query(Game).filter(Game.id.in_(flatten(gameids))).all():
+		gamedict=game._asdict()
+		if hitterObject.name in gamedict[gamedict['winner']]:
+			gamedict['winstatus']="win"
+		else:
+			gamedict['winstatus']='loss'
+		gameslist.append(gamedict)
+	return gameslist
+
+def currentSeasonRecordString(session, hitterObject):
+	gameids=session.query(Game.id).join(Game.awayteam).join(Team.hitters).filter(
+		Team.hitters.contains(hitterObject)).filter(Game.date>currentseasonstartdate).distinct().all() + session.query(
+		Game.id).join(Game.hometeam).join(Team.hitters).filter(
+		Team.hitters.contains(hitterObject)).filter(Game.date>currentseasonstartdate).distinct().all()
+	winninggames=0
+	games=session.query(Game).filter(Game.id.in_(flatten(gameids))).all()
+	for game in games:
+		gamedict=game._asdict()
+		if hitterObject.name in gamedict[gamedict['winner']]:
+			winninggames = winninggames + 1
+	totalgames=len(games)
+	return "%d - %d" % (winninggames, (totalgames-winninggames))
+
+def flatten(listtoflatten):
+	return [item for sublist in listtoflatten for item in sublist]
+
+def bffs(session, hitterobject):
+	bffs=sorted(session.query(Hitter, func.count(Game.id)).join(Hitter.teams).join(Team.winninggames).filter(Team.hitters.contains(hitterobject)).filter(Hitter.name!=hitterobject.name).group_by(Hitter).all(), key=lambda x:x[1], reverse=True)
+	listofbffs=[]
+	for bff in bffs:
+		player = bff[0]
+		wincount=bff[1]
+		listofbffs.append({'name':player.name,
+			'wincount':wincount,
+			'skill':player.hitzskill(),
+			'overallskill':player.overallhitzskill()
+			})
+	listofbffs.sort(key=lambda k: k['skill'], reverse=True)
+	listofbffs.sort(key=lambda k: k['wincount'], reverse=True)
+	return listofbffs[:5]
+
+def bestTeams(session, hitterobject):
+	teams=sorted(session.query(Team, func.count(Game.id)).join(Team.winninggames).filter(
+    	Team.hitters.contains(hitterobject)).group_by(Team).all(),
+    	key=lambda x:x[1], reverse=True)
+	listofteams=[]
+	for besty in teams:
+		team=besty[0]
+		wincount=besty[1]
+		listofteams.append({
+			'names':team.listnames(),
+			'teamskill':float(int(team.getteamrating()*100))/100.0,
+			'overallteamskill':float(int(team.getoverallteamrating()*100))/100.0,
+			'wincount':wincount
+
+			})
+	listofteams.sort(key=lambda k: k['teamskill'], reverse=True)
+	listofteams.sort(key=lambda k: k['wincount'], reverse=True)
+	return listofteams[:5]
+
+def rivals(session, hitterobject):
+	gameids=session.query(Game.id).join(Game.awayteam).join(Team.hitters).filter(
+    	Team.hitters.contains(hitterobject)).distinct().all() + session.query(Game.id).join(Game.hometeam).join(Team.hitters).filter(
+    	Team.hitters.contains(hitterobject)).distinct().all()
+	rivals=sorted(session.query(Hitter, func.count(Game.id)).join(Game.winner).join(
+    	Team.hitters).filter(Game.id.in_(
+    	[item for sublist in gameids for item in sublist])).filter(
+    	Hitter.name!=hitterobject.name).group_by(Hitter).all(),
+    	key=lambda x:x[1],reverse=True)
+	listofrivals=[]
+	for rival in rivals:
+		player=rival[0]
+		wincount=rival[1]
+		listofrivals.append({
+				'name':player.name,
+				'wincount':wincount,
+				'skill':player.hitzskill(),
+				'overallskill':player.overallhitzskill()
+			})
+	listofrivals.sort(key=lambda k: k['skill'], reverse=True)
+	listofrivals.sort(key=lambda k: k['wincount'], reverse=True)
+	return listofrivals[:5]
+
+
+def standaloneSetup():
+	engine = create_engine('sqlite:///hitz.sqlite')
+	
+
+	Session = sessionmaker(bind=engine)
+
+	session = Session()
+	Base.metadata.create_all(engine)
+	return session
+
 
 if __name__ == "__main__":
 	#Base = declarative_base()
@@ -448,8 +598,8 @@ if __name__ == "__main__":
 	#print nickteams
 	print qry
 	#print "%s" % (record.hitzskill())
-	#gamesbackup=jsonbackup(session)
-	#print gamesbackup
+	gamesbackup=jsonbackup(session)
+	print gamesbackup
 	#collectionOfGames= generateGamePermutations([i.name for i in recordsbelowsigma], 20)
 	#cls()
 	#print list(collectionOfGames)

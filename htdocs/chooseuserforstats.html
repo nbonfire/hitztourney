@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>User Stats</title>
+  <link rel="shortcut icon" href="demos/images/favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" href="demos/images/apple-touch-icon.png">
+   
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/datepicker.css">
+    <script type="text/javascript" src="../js/jquery.min.js"></script>
+    <script type="text/javascript" src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../js/eventdispatch.js"></script>
+    <script type="text/javascript" src="../js/bootstrap-datepicker.js"></script>
+
+
+
+<body>
+      <div class="container">
+    <div class="navbar">
+        <a href="#" class="navbar-brand">Hitz</a>
+        <ul class="nav navbar-nav">
+          <li id="home">
+            <a href="#">Home</a>
+          </li>
+          <li id="stats" class="active">
+            <a href="../playerstats">Stats</a>
+          </li>
+          <li id="gameshistory">
+            <a href="../history">Games History</a>
+          </li>
+          <li id="gamesadmin">
+            <a href="../games">Games Admin</a>
+          </li>
+
+        </ul>
+    </div>
+    <div class="row">
+      <div class="panel text-right panel-default">
+        <div class="panel-heading"><h3 class="panel-title">Choose a User to View</h3>
+        </div>
+        <p class="text-right"><center><table class="table"><tbody>
+            % for player in players:
+  <tr><td><a href="playerstats/${player['name']}">${player['name']}</a><td>${player['skill']}</td><td>(Lifetime:${player['overallskill']})</td><td>Record: ${player['record']}</td></tr>
+  % endfor
+          </table></p>
+      </div>
+
+
+
+</body>
