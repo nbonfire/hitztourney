@@ -239,7 +239,7 @@ def getRecordsBelowSigma(session, sigma=SIGMA_CUTOFF):
 
 def getStrength(session, homeNames,awayNames):
 	#
-	# AKA the draw probability. Return value is *1000 to make it easier for output on the page.
+	# AKA the draw probability. Return value is *10000 to make it easier for output on the page.
 	# ({'name':'alice','rating':2.0},{'name':'bob','rating':1.4},{'name':'charlie','rating':3.2})
 	#
 	homeTeam=get_or_create_team(session, homeNames)

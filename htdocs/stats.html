@@ -18,34 +18,43 @@ Required:
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>User Stats</title>
-  <link rel="shortcut icon" href="demos/images/favicon.ico" type="image/x-icon">
-  <link rel="apple-touch-icon" href="demos/images/apple-touch-icon.png">
+  <link rel="shortcut icon" href="/images/apple-touch-icon.png" type="image/x-icon">
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
    
     <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css">
-    <link rel="stylesheet" href="../css/datepicker.css">
-    <script type="text/javascript" src="../js/jquery.min.js"></script>
+    <link rel="stylesheet" href="/css/datepicker.css">
+    <script type="text/javascript" src="/js/jquery.min.js"></script>
     <script type="text/javascript" src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="../js/eventdispatch.js"></script>
-    <script type="text/javascript" src="../js/bootstrap-datepicker.js"></script>
-
+    <script type="text/javascript" src="/js/eventdispatch.js"></script>
+    <script type="text/javascript" src="/js/bootstrap-datepicker.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-backstretch/2.0.4/jquery.backstretch.min.js"></script>
 
 
     <body>
+    <style>
+
+.backstretch img {
+  opacity: 0.6;
+  filter: alpha(opacity=90);
+}   
+    </style>
+    <script type="text/javascript">$.backstretch("/images/mask-sticks.png")</script>
       <div class="container">
     <div class="navbar">
-        <a href="#" class="navbar-brand">Hitz</a>
+        <a href="#" class="navbar-brand"><img src="/images/HITZ.png" alt="Hitz" class="img-responsive"></a>
         <ul class="nav navbar-nav">
           <li>
             <a href="#">Home</a>
           </li>
           <li class="active">
-            <a href="../playerstats">Stats</a>
+            <a href="/playerstats">Stats</a>
           </li>
           <li>
-            <a href="../games">Games</a>
+            <a href="/games">Games</a>
           </li>
         </ul>
     </div>
+    
     <div class="jumbotron">
   <div class="container">
     <h1>${user.name}</h1>

@@ -311,6 +311,10 @@ if __name__ == '__main__':
 				{'tools.staticdir.on': True,
 				 'tools.staticdir.dir': os.path.join(current_dir, 'htdocs/js')
 				},
+			'/images':
+				{'tools.staticdir.on': True,
+				 'tools.staticdir.dir': os.path.join(current_dir, 'htdocs/images')
+				},
 			#'/media':
 			#	{'tools.staticdir.on': True,
 			#	 'tools.staticdir.dir': os.path.join(current_dir, 'htdocs/media')
