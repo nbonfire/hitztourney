@@ -400,6 +400,24 @@ def currentSeasonRecordString(session, hitterObject):
 	totalgames=len(games)
 	return "%d - %d" % (winninggames, (totalgames-winninggames))
 
+def recordstring1v1(session, playername, opponentname):
+	player=get_or_create(session, Hitter, name=playername)
+	opponent=get_or_create(session, Hitter, name=opponentname)
+	return record1v1(session, player, opponent)
+
+def record1v1(session, player, opponent):
+	
+	playerHomeGameids=session.query(Game.id).join(Hitter.teams).join(Team.homegames).filter(Team.hitters.contains(player)).distinct().all()
+	playerAwayGameids=session.query(Game.id).join(Hitter.teams).join(Team.awaygames).filter(Team.hitters.contains(player)).distinct().all()
+	playerVsOpponenthomegameids=session.query(Game.id).join(Hitter.teams).join(Team.awaygames).filter(Team.hitters.contains(opponent)).filter(Game.id.in_(flatten(playerHomeGameids))).distinct().all()
+	playerVsOpponentawaygameids=session.query(Game.id).join(Hitter.teams).join(Team.homegames).filter(Team.hitters.contains(opponent)).filter(Game.id.in_(flatten(playerAwayGameids))).distinct().all()
+	playerVsOpponentwinninggamecount = flatten(session.query(func.count(Game.id)).join(Hitter.teams).join(Team.winninggames).filter(Game.id.in_(flatten(playerVsOpponenthomegameids + playerVsOpponentawaygameids))).filter(Team.hitters.contains(player)).distinct().all())[0]
+	
+	playerVsOpponenttotalgamecount = len(flatten(playerVsOpponenthomegameids + playerVsOpponentawaygameids))
+	#return playerVsOpponentwinninggamecount 
+	return {'record':"%d - %d" % (playerVsOpponentwinninggamecount, (playerVsOpponenttotalgamecount-playerVsOpponentwinninggamecount)), 'percentagewon':int(float(playerVsOpponentwinninggamecount)*10000/float(playerVsOpponenttotalgamecount))/100}
+
+
 def flatten(listtoflatten):
 	return [item for sublist in listtoflatten for item in sublist]
 
@@ -437,27 +455,20 @@ def bestTeams(session, hitterobject):
 	listofteams.sort(key=lambda k: k['wincount'], reverse=True)
 	return listofteams[:5]
 
-def rivals(session, hitterobject):
-	gameids=session.query(Game.id).join(Game.awayteam).join(Team.hitters).filter(
-    	Team.hitters.contains(hitterobject)).distinct().all() + session.query(Game.id).join(Game.hometeam).join(Team.hitters).filter(
-    	Team.hitters.contains(hitterobject)).distinct().all()
-	rivals=sorted(session.query(Hitter, func.count(Game.id)).join(Game.winner).join(
-    	Team.hitters).filter(Game.id.in_(
-    	[item for sublist in gameids for item in sublist])).filter(
-    	Hitter.name!=hitterobject.name).group_by(Hitter).all(),
-    	key=lambda x:x[1],reverse=True)
-	listofrivals=[]
-	for rival in rivals:
-		player=rival[0]
-		wincount=rival[1]
-		listofrivals.append({
-				'name':player.name,
-				'wincount':wincount,
-				'skill':player.hitzskill(),
-				'overallskill':player.overallhitzskill()
+def outforbloods(session, hitterobject):
+	
+	ofbs=session.query(Hitter).filter(
+    	Hitter.name!=hitterobject.name).distinct().all()
+	listofofb=[]
+	for ofb in ofbs:
+		listofofbs.append({
+				'name':ofb.name,
+				'record':record1v1(session, ofb, hitterobject)
+				'skill':ofb.hitzskill(),
+				'overallskill':ofb.overallhitzskill()
 			})
 	listofrivals.sort(key=lambda k: k['skill'], reverse=True)
-	listofrivals.sort(key=lambda k: k['wincount'], reverse=True)
+	listofrivals.sort(key=lambda k: k['record']['percentage'], reverse=True)
 	return listofrivals[:5]
 
 
