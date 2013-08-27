@@ -71,7 +71,7 @@ Required:
           </div>
           <p class="text-right"><center><table class="table"><tbody>
             % for bff in bffs:
-  <tr><td><a href="/playerstats/${bff['name']}">${bff['name']}</a><td>${bff['skill']}</td><td>(Lifetime:${bff['overallskill']})</td><td>Wins: ${bff['wincount']}</td></tr>
+  <tr><td><a href="/playerstats/${bff['name']}">${bff['name']}</a><td>${bff['skill']}(${bff['overallskill']})</td><td>Record:</td><td> ${bff['record']['record']}</td><td>(${bff['record']['percentagewon']}%)</td></tr>
   % endfor
           </table></p>
         </div>
@@ -82,7 +82,7 @@ Required:
           </div>
           <p class="text-right"><center><table class="table"><tbody>
             % for rival in rivals:
-  <tr><td><a href="/playerstats/${rival['name']}">${rival['name']}</a><td>${rival['skill']}</td><td>(Lifetime:${rival['overallskill']})</td><td>Wins: ${rival['wincount']}</td></tr>
+  <tr><td><a href="/playerstats/${rival['name']}">${rival['name']}</a><td>${rival['skill']}(${rival['overallskill']})</td><td>Record:</td><td>${rival['record']['record']}</td><td>(${rival['record']['percentagewon']}%)</td></tr>
   % endfor
           </table></p>
         </div>
