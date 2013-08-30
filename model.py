@@ -1,7 +1,7 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import ForeignKey, Table, Text, create_engine, Column, Integer, String, PickleType, DateTime, func
 from sqlalchemy.orm import relationship, backref, sessionmaker
-import json, io, pickle, datetime, itertools
+import json, io, pickle, datetime, itertools, pprint, os
 
 from sortedcollection import *
 from trueskill import *
@@ -259,15 +259,41 @@ def getWinProb(rA=env.Rating(), rB=env.Rating()):
 
 def jsonbackup(session):
 	results = []
+	names = []
 	allgames = session.query(Game).all()
+	allhitters=session.query(Hitter).all()
+	for hitter in allhitters:
+		names.append(hitter.name)
 
 	for game in allgames:
 		results.append(game._asdict())
 
-	with io.open('gamesbackup-%s.txt'% str(datetime.date.today()), 'w', encoding='utf-8') as f:
-		f.write(unicode(json.dumps(results, ensure_ascii=False)))
+	with io.open('playersbackup-%s.txt'% str(datetime.date.today()), 'w', encoding='utf-8') as fn:
+		fn.write(unicode(json.dumps(names, ensure_ascii=False)))
+	with io.open('gamesbackup-%s.txt'% str(datetime.date.today()), 'w', encoding='utf-8') as fg:
+		fg.write(unicode(json.dumps(results, ensure_ascii=False)))
 	return json.dumps(results)
 
+def jsonrestore(namefile='playersbackup.txt', gamefile='gamesbackup.txt'):
+	if not os.path.exists('hitz.sqlite'):
+		session=standaloneSetup()
+		results=[]
+		names=[]
+
+		with io.open(namefile, 'r', encoding='utf-8') as fn:
+			names=json.loads(fn.read())
+		with io.open(gamefile, 'r', encoding='utf-8') as fg:
+			results=json.loads(fg.read())
+		#pprint.pprint(names)
+		#pprint.pprint( results)
+		
+		for name in names:
+			get_or_create(session, Hitter, name=name)
+		for game in results:
+			completeGame(session,game['home'], game['away'], game['winner'], game['score']['away'], game['score']['home'], datetime.datetime.strptime(game['date'], '%Y-%m-%d %H:%M:%S'))
+		session.close()
+	else:
+		print "DB file hitz.sqlite already exists. Delete it before running this command."
 
 def getLastPlayed(session, homeNames,awayNames):
 	#
@@ -352,8 +378,7 @@ def newSeasonRatingRecalculation(session, newDate=datetime.datetime.today()):
 def getPlayersForTemplate(session, checkedPlayers=['Nick', 'Rosen', 'Magoo', 'White Rob', 'Ziplox', 'Ced']):
 	players = session.query(Hitter).all()
 	names = []
-	#defined in matchups.py
-	#defaultPlayers = ['Nick', 'Ziplox', 'Rosen', 'Magoo', 'Ced', 'White Rob', 'Adi']
+
 	for player in players:
 		if player.name in checkedPlayers:
 			isChecked=True
@@ -530,6 +555,9 @@ def standaloneSetup():
 
 
 if __name__ == "__main__":
+	
+	if RESET==1:
+		jsonrestore()
 	#Base = declarative_base()
 	engine = create_engine('sqlite:///hitz.sqlite')
 	
@@ -550,67 +578,6 @@ if __name__ == "__main__":
 		hitlist.append(currentplayer)
 	session.commit()
 	
-	if RESET==1:
-		games = [
-		{'away':['Nick','Ziplox','Ced'],'home':['Rosen','Crabman','Magoo'],'winner':'away', 'score':{'away':0,'home':0}, 'date':datetime.datetime(2013,7,13)},
-		{'away':['Rosen','Ced','Magoo'],'home':['Nick','Ziplox','Crabman'],'winner':'away', 'score':{'away':0,'home':0},'date':datetime.datetime(2013,7,13)}, 
-		{'home':['Rosen','Ced','Magoo'],'away':['Nick','Ziplox','Crabman'],'winner':'home', 'score':{'away':0,'home':0},'date':datetime.datetime(2013,7,13)},
-		{'away':['Ziplox','Magoo','Nick'],'home':['Ced','Crabman','Rosen'],'winner':'away', 'score':{'away':0,'home':0},'date':datetime.datetime(2013,7,13)},
-		{'away':['Ziplox','Rosen','Ced'],'home':['Nick','Magoo','Crabman'],'winner':'away', 'score':{'away':0,'home':0},'date':datetime.datetime(2013,7,13)}, 
-		{'home':['Ziplox','Rosen','Ced'],'away':['Nick','Magoo','Crabman'],'winner':'home', 'score':{'away':0,'home':0},'date':datetime.datetime(2013,7,13)},
-		{'home':['Ziplox','Rosen','Ced'],'away':['Nick','Magoo','Crabman'],'winner':'home', 'score':{'away':0,'home':0},'date':datetime.datetime(2013,7,13)},
-		{'away':['Magoo','Crabman','Rosen'],'home':['Ziplox','Ced','Nick'],'winner':'home', 'score':{'away':0,'home':0},'date':datetime.datetime(2013,7,13)},
-		{'home':['Ziplox','Rosen','Adi'],'away':['Crabman','Drew','White Rob'],'winner':'home','score':{'away':0,'home':0}, 'date':datetime.datetime(2013,7,27)},
-		{'away':['Ziplox','Nick','Adi'],'home':['Crabman','Drew','White Rob'],'winner':'away','score':{'away':0,'home':0}, 'date':datetime.datetime(2013,7,27)},
-		{'away':['Rosen','Crabman','White Rob'],'home':['Ziplox','Nick','Adi'],'winner':'home','score':{'away':0,'home':0}, 'date':datetime.datetime(2013,7,27)},
-		{'away':['Rosen','White Rob','Adi'],'home':['Ziplox','Nick','Drew'],'winner':'home','score':{'away':0,'home':0}, 'date':datetime.datetime(2013,7,27)},      
-		{'away':['Rosen','White Rob','Crabman'],'home':['Ziplox','Nick','Drew'],'winner':'home','score':{'away':0,'home':0}, 'date':datetime.datetime(2013,7,27)},
-		{'away':['Drew','Adi','Crabman'],'home':['Rosen','Nick','Ziplox'],'winner':'away','score':{'away':0,'home':0}, 'date':datetime.datetime(2013,7,27)},
-		{'away':['Nick','White Rob','Rosen'],'home':['Drew','Adi','Crabman'],'winner':'home','score':{'away':0,'home':0}, 'date':datetime.datetime(2013,7,27)},
-		{'away':['Ziplox','White Rob','Rosen'],'home':['Drew','Adi','Crabman'],'winner':'away','score':{'away':0,'home':0}, 'date':datetime.datetime(2013,7,27)},
-		{'away':['White Rob','Drew','Adi'],'home':['Ziplox','Nick','Rosen'],'winner':'home','score':{'away':0,'home':0}, 'date':datetime.datetime(2013,7,27)},
-		{'away':['White Rob','Crabman','Adi'],'home':['Ziplox','Nick','Rosen'],'winner':'away','score':{'away':0,'home':0}, 'date':datetime.datetime(2013,7,27)},
-		{'away':['Ziplox','Nick','Drew'],'home':['White Rob','Adi','Crabman'],'winner':'home','score':{'away':0,'home':0}, 'date':datetime.datetime(2013,7,27)},              
-		{'away':['Ziplox','Rosen','Drew'],'home':['White Rob','Adi','Crabman'],'winner':'home','score':{'away':0,'home':0}, 'date':datetime.datetime(2013,7,27)},  
-		{'away':['Bader','Magoo','Kent'],'home':['Adi','White Rob','Keedy'],'winner':'away', 'score':{'away':6,'home':5}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Rosen','Ziplox','Koplow'],'home':['Ced','Jon','Nick'],'winner':'away', 'score':{'away':6,'home':4}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Koplow','Ced','Jesse'],'home':['Ziplox','Adi','Bader'],'winner':'home', 'score':{'away':6,'home':7}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Magoo','McGilloway','Nick'],'home':['Rosen','Gio','Kent'],'winner':'away', 'score':{'away':11,'home':7}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Gio','Magoo','Jon'],'home':['Nick','Ced','Bader'],'winner':'away', 'score':{'away':14,'home':7}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Koplow','McGilloway','Keedy'],'home':['White Rob','Rosen','Jesse'],'winner':'away', 'score':{'away':12,'home':10}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Keedy','Jesse','Kent'],'home':['Gio','Ced','Rosen'],'winner':'away', 'score':{'away':12,'home':7}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Jon','McGilloway','Ziplox'],'home':['Magoo','Adi','White Rob'],'winner':'away', 'score':{'away':10,'home':9}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Adi','Koplow','Jon'],'home':['Gio','Keedy','McGilloway'],'winner':'home', 'score':{'away':2,'home':4}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Nick','White Rob','Kent'],'home':['Ziplox','Jesse','Bader'],'winner':'home', 'score':{'away':6,'home':13}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Nick','Jesse','Jon'],'home':['Magoo','Adi','Keedy'],'winner':'home', 'score':{'away':4,'home':7}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Koplow','Gio','Ziplox'],'home':['Bader','Rosen','White Rob'],'winner':'away', 'score':{'away':12,'home':9}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Jon','Rosen','Kent'],'home':['Adi','Bader','Jesse'],'winner':'home', 'score':{'away':7,'home':9}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Magoo','Nick','Keedy'],'home':['Ziplox','Ced','McGilloway'],'winner':'away', 'score':{'away':9,'home':7}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['McGilloway','Koplow','Kent'],'home':['Ced','Bader','Jon'],'winner':'home', 'score':{'away':6,'home':12}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Gio','Nick','White Rob'],'home':['Rosen','Jesse','Adi'],'winner':'away', 'score':{'away':10,'home':7}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Magoo','Koplow','White Rob'],'home':['Ced','Gio','Kent'],'winner':'away', 'score':{'away':16,'home':5}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Jon','McGilloway','Bader'],'home':['Ziplox','Keedy','Rosen'],'winner':'home', 'score':{'away':8,'home':11}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Koplow','Gio','Keedy'],'home':['Magoo','Jesse','Ziplox'],'winner':'home', 'score':{'away':1,'home':15}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Ced','White Rob','Kent'],'home':['Nick','McGilloway','Adi'],'winner':'away', 'score':{'away':19,'home':4}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Ziplox','Adi','Kent'],'home':['Magoo','Rosen','Koplow'],'winner':'away', 'score':{'away':14,'home':7}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Jesse','Ced','Keedy'],'home':['Bader','White Rob','McGilloway'],'winner':'away', 'score':{'away':13,'home':8}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Bader','Koplow','Nick'],'home':['Magoo','McGilloway','Jesse'],'winner':'home', 'score':{'away':5,'home':7}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Ziplox','Ced','White Rob'],'home':['Adi','Gio','Jon'],'winner':'away', 'score':{'away':18,'home':1}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Rosen','Ced','Magoo'],'home':['Jesse','White Rob','Jon'],'winner':'away', 'score':{'away':18,'home':7}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Ziplox','Gio','Nick'],'home':['Kent','Bader','Keedy'],'winner':'away', 'score':{'away':11,'home':7}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Jon','Ziplox','Kent'],'home':['Jesse','Gio','McGilloway'],'winner':'away', 'score':{'away':19,'home':5}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Rosen','Keedy','Nick'],'home':['Ced','Koplow','Adi'],'winner':'home', 'score':{'away':9,'home':10}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Jon','Keedy','White Rob'],'home':['Nick','Koplow','Kent'],'winner':'away', 'score':{'away':15,'home':11}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Rosen','McGilloway','Adi'],'home':['Magoo','Bader','Gio'],'winner':'home', 'score':{'away':3,'home':10}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Ziplox','Ced','Keedy'],'home':['Magoo','Jesse','Gio'],'winner':'away', 'score':{'away':16,'home':3}, 'date':datetime.datetime(2013,4,20)},
-		{'away':['Magoo','Jesse','Gio'],'home':['Ziplox','Ced','Keedy'],'winner':'home', 'score':{'away':5,'home':12}, 'date':datetime.datetime(2013,4,20)},
-		#{'away':['','',''],'home':['','',''],'winner':'', 'score':{'away':0,'home':0},'date':datetime.datetime(yyyy,mm,dd)},    
-		]
-		# Adding records
-	
-	
-		for game in games:
-			completeGame(session=session, homeTeam=game['home'],awayTeam=game['away'],winner=game['winner'],awaypoints=game['score']['away'],homepoints=game['score']['home'], datePlayed=game['date'])
 			
 			
 			
