@@ -384,6 +384,7 @@ class HitzApp(object):
 			return Template(filename='htdocs/stats.html', input_encoding='utf-8').render(
 				user=statssubject,
 				rivals=rivals(cherrypy.request.db, statssubject),
+				ofbs=outforbloods(cherrypy.request.db,statssubject),
 				bffs=bffs(cherrypy.request.db, statssubject),
 				rating=statssubject.rating,
 				bestTeams=bestTeams(cherrypy.request.db, statssubject),

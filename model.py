@@ -128,6 +128,7 @@ class Team(Base):
 			return avgindividual
 		else:
 			return self.overallteamskill()
+
 		
 
 class Game(Base):
@@ -183,7 +184,7 @@ class Game(Base):
 			'away':self.awayteam.listofnames(),
 			'home':self.hometeam.listofnames(),
 			'winner':self.winposition(),
-			'date':str(self.date),
+			'date':datetime.datetime.strftime(self.date,'%Y-%m-%d'),
 			'score':{
 						'home':self.homepoints,
 						'away':self.awaypoints
@@ -404,12 +405,34 @@ def getGameHistoryForUser(session, hitterObject, date=datetime.datetime(2013,1,1
 	gameslist = []
 	for game in session.query(Game).filter(Game.id.in_(flatten(gameids))).all():
 		gamedict=game._asdict()
+		gamedict['record']=getTeamVsRecord(session, hitterObject, game.awayteam, game.hometeam)
 		if hitterObject.name in gamedict[gamedict['winner']]:
 			gamedict['winstatus']="win"
 		else:
 			gamedict['winstatus']='loss'
 		gameslist.append(gamedict)
+	gameslist.sort(key=lambda k: k['date'], reverse=True)
 	return gameslist
+
+def getTeamVsRecord(session, hitterObject, awayteam, hometeam):
+	#	gamealias=aliased(Game)
+	#	session.query(Game).join(Game.awayteam).join(gamealias.hometeam).filter(gamealias.hometeam = hometeam).filter(Game.awayteam = awayteam)
+	
+	homegames=flatten(session.query(Game.id).join(Game.hometeam).filter(Game.hometeam==hometeam).all())
+	homegamesagainstsecondteam=flatten(session.query(Game.id).join(Game.awayteam).filter(Game.awayteam==awayteam).filter(Game.id.in_(homegames)).all())
+	awaygames=flatten(session.query(Game.id).join(Game.awayteam).filter(Game.awayteam==hometeam).all())
+	awaygamesagainstsecondteam=flatten(session.query(Game.id).join(Game.hometeam).filter(Game.hometeam==awayteam).filter(Game.id.in_(awaygames)).all())
+	allgames=homegamesagainstsecondteam+awaygamesagainstsecondteam
+	homewins=0
+	awaywins=0
+	for game in session.query(Game).filter(Game.id.in_(allgames)).all():
+		if game.winner == awayteam:
+			awaywins= awaywins+1 
+		else:
+			homewins = homewins+1
+	percentage = float(int(float(awaywins*10000)/float(awaywins + homewins)))/100.0 
+	return {'record':'%d - %d'%(awaywins, homewins), 'percentagewon':percentage}
+
 
 def currentSeasonRecordString(session, hitterObject):
 	gameids=session.query(Game.id).join(Game.awayteam).join(Team.hitters).filter(
@@ -437,10 +460,10 @@ def record1w1(session, player, partner):  # record for hitter player with hitter
 	playerWinninggamecount=len(flatten(session.query(Game.id).join(Hitter.teams).join(Team.winninggames).filter(Team.hitters.contains(player)).filter(Team.hitters.contains(partner)).filter(Game.id.in_(flatten(playerHomeGameids + playerAwayGameids))).distinct().all()))
 	#playerWinninggamecount = len(flatten(session.query(Game.id).join(Hitter.teams).join(Team.winninggames).filter(Game.id.in_(flatten(playerHomegameids + playerAwaygameids))).filter(Team.hitters.contains(player)).filter(Team.hitters.contains(partner)).distinct().all()))
 	playerTotalgamecount = len(flatten(playerHomeGameids + playerAwayGameids))
-	print (player.name, partner.name)
-	print playerWinninggamecount
-	print playerTotalgamecount
-	print (playerHomeGameids, playerAwayGameids)
+	#print (player.name, partner.name)
+	#print playerWinninggamecount
+	#print playerTotalgamecount
+	#print (playerHomeGameids, playerAwayGameids)
 	if playerTotalgamecount>0:
 		percentagewon=float(int(float(playerWinninggamecount*10000)/float(playerTotalgamecount)))/100.0
 	else:
@@ -462,7 +485,7 @@ def record1v1(session, player, opponent): # record for hitter player against hit
 		percentagewon=float(int(float(playerVsOpponentwinninggamecount)*10000/float(playerVsOpponenttotalgamecount)))/100.0
 	else:
 		percentagewon=0
-	return {'record':"%d - %d" % (playerVsOpponentwinninggamecount, (playerVsOpponenttotalgamecount-playerVsOpponentwinninggamecount)), 'percentagewon':percentagewon, 'opponentsigma':opponent.rating.sigma}
+	return {'record':"%d - %d" % (playerVsOpponentwinninggamecount, (playerVsOpponenttotalgamecount-playerVsOpponentwinninggamecount)), 'percentagewon':percentagewon, 'opponentsigma':opponent.rating.sigma, 'totalgames':playerVsOpponenttotalgamecount}
 
 
 def flatten(listtoflatten):
@@ -496,24 +519,37 @@ def bestTeams(session, hitterobject):
 	listofteams=[]
 	for besty in teams:
 		team=besty[0]
+		totalcount=flatten(session.query(Game.id).join(Game.hometeam).filter(
+			Game.hometeam==team).all()) + flatten(session.query(Game.id).join(Game.awayteam).filter(
+			Game.awayteam==team).all())
+		print totalcount
+		totalcount=len(totalcount)
 		wincount=besty[1]
-		listofteams.append({
-			'names':team.listnames(),
-			'teamskill':float(int(team.getteamrating()*100))/100.0,
-			'overallteamskill':float(int(team.getoverallteamrating()*100))/100.0,
-			'wincount':wincount	})
+		if totalcount>0:
+			wonpercentage=(float(int(float(wincount*10000)/float(totalcount)))/100.0)
+		else:
+			wonpercentage=0.0
+		if wincount>1:
+			listofteams.append({
+				'names':team.listnames(),
+				'teamskill':float(int(team.getteamrating()*100))/100.0,
+				'overallteamskill':float(int(team.getoverallteamrating()*100))/100.0,
+				'record':{'record':'%d - %d' % (wincount,totalcount-wincount), 
+					'percentagewon':wonpercentage
+				}
+			})
 	listofteams.sort(key=lambda k: k['teamskill'], reverse=True)
-	listofteams.sort(key=lambda k: k['wincount'], reverse=True)
+	listofteams.sort(key=lambda k: k['record']['percentagewon'], reverse=True)
 	return listofteams[:5]
 
 def outforbloods(session, hitterobject):
 	
 	ofbs=session.query(Hitter).filter(
     	Hitter.name!=hitterobject.name).distinct().all()
-	listofofb=[]
+	listofofbs=[]
 	for ofb in ofbs:
 		ofbrecord=record1v1(session, hitterobject, ofb)
-		if ofbrecord['opponentsigma']<SIGMA_CUTOFF:
+		if (ofbrecord['opponentsigma']<SIGMA_CUTOFF) and ((ofbrecord['percentagewon']<40.0) and (ofbrecord['totalgames']>0)):
 			listofofbs.append({
 				'name':ofb.name,
 				'record':ofbrecord,

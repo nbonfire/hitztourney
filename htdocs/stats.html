@@ -97,24 +97,55 @@ Required:
           </div>
           <p class="text-right"><center><table class="table"><tbody>
             % for team in bestTeams:
-  <tr><td>${team['names']}<td>${team['teamskill']}</td><td>(Lifetime:${team['overallteamskill']})</td><td>Wins: ${team['wincount']}</td></tr>
-  % endfor
+  <tr><td>${team['names']}<td>${team['teamskill']}(${team['overallteamskill']})</td>
+  <td>${team['record']['record']}</td><td> (${team['record']['percentagewon']}%)</td></tr>
+    % endfor
           </table></p>
         </div>
       </div>
       
       <div class="col-lg-6">
         <div class="panel">
-          <div class="panel-heading"><h3 class="panel-title">Game History</h3>
+          <div class="panel-heading"><h3 class="panel-title">Out For Blood!</h3>
           </div>
           <p class="text-right"><center><table class="table"><tbody>
-            % for game in gamehistory:
-  <tr><td>${game['away'][0]}, ${game['away'][1]}, ${game['away'][2]}</td><td>vs</td><td>${game['home'][0]}, ${game['home'][1]}, ${game['home'][2]}</td><td>${game['winstatus']}</td></tr>
-            % endfor
+            % for ofb in ofbs:
+  <tr><td><a href="/playerstats/${ofb['name']}">${ofb['name']}</a><td>${ofb['skill']}(${ofb['overallskill']})</td><td>Record:</td><td>${ofb['record']['record']}</td><td>(${ofb['record']['percentagewon']}%)</td></tr>
+  % endfor
           </table></p>
         </div>
       </div>
       
     </div>
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="panel">
+          <div class="panel-heading"><h3 class="panel-title">Game History</h3>
+          </div>
+          <p><center>
+          <table class="table"><tbody>
+            % for game in gamehistory:
+  
+            % if game['winstatus']=='win':
+  <tr class="success">
+            % else:
+  <tr class="danger">
+            % endif
+  <td>${game['date']}</td>
+  <td>${game['away'][0]}, ${game['away'][1]}, ${game['away'][2]}</td>
+  <td>vs</td>
+  <td>${game['home'][0]}, ${game['home'][1]}, ${game['home'][2]}</td>
+  <td>${game['record']['record']}</td>
+  <td>${game['record']['percentagewon']}</td>
+  </tr>
+            % endfor
+          
+          </tbody>
+          </table>
+          </center>
+          </p>
+        </div>
+      </div>
+
 
 
