@@ -181,6 +181,7 @@ class Game(Base):
 		return "<%s -  %s vs %s - %s won>" %(self.date, self.awayteam, self.hometeam, self.winner)
 	def _asdict(self):
 		return {
+			'id':self.id,
 			'away':self.awayteam.listofnames(),
 			'home':self.hometeam.listofnames(),
 			'winner':self.winposition(),
@@ -294,7 +295,7 @@ def jsonrestore(namefile='playersbackup.txt', gamefile='gamesbackup.txt'):
 			completeGame(session,game['home'], game['away'], game['winner'], game['score']['away'], game['score']['home'], datetime.datetime.strptime(game['date'], '%Y-%m-%d %H:%M:%S'))
 		session.close()
 	else:
-		print "DB file hitz.sqlite already exists. Delete it before running this command."
+		print "DB file hitz.sqlite already exists. Delete or move it before running this command."
 
 def getLastPlayed(session, homeNames,awayNames):
 	#
