@@ -411,7 +411,7 @@ def getGameHistoryForUser(session, hitterObject, date=datetime.datetime(2013,1,1
 		else:
 			gamedict['winstatus']='loss'
 		gameslist.append(gamedict)
-	gameslist.sort(key=lambda k: k['date'], reverse=True)
+	gameslist.sort(key=lambda k: k['id'], reverse=True)
 	return gameslist
 
 def getTeamVsRecord(session, hitterObject, awayteam, hometeam):
