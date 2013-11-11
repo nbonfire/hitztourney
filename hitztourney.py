@@ -43,6 +43,18 @@ nextMatchIndex = 0
 for index, player in enumerate(players):
   playerList.append({"name":player,"id":int(index),"wins":0,"games":0,"average":0.000});
 tv=["Samsung","Sony"]
+if len(players)==12:
+	#( 2  3  9 v  7 10  1)  ( 8  5  6 v 12  4 11) 
+  	#( 3  4 10 v  8 11  2)  ( 9  6  7 v 12  5  1) 
+  	#( 4  5 11 v  9  1  3)  (10  7  8 v 12  6  2) 
+  	#( 5  6  1 v 10  2  4)  (11  8  9 v 12  7  3) 
+  	#( 6  7  2 v 11  3  5)  ( 1  9 10 v 12  8  4) 
+  	#( 7  8  3 v  1  4  6)  ( 2 10 11 v 12  9  5) 
+  	#( 8  9  4 v  2  5  7)  ( 3 11  1 v 12 10  6) 
+  	#( 9 10  5 v  3  6  8)  ( 4  1  2 v 12 11  7) 
+  	#(10 11  6 v  4  7  9)  ( 5  2  3 v 12  1  8) 
+  	#(11  1  7 v  5  8 10)  ( 6  3  4 v 12  2  9) 
+  	#( 1  2  8 v  6  9 11)  ( 7  4  5 v 12  3 10) 
 if len(players)==14:
 	#(8 1 12 v 13 11 7) (9 14 6 v 4 3 2) (5 10)
 	matchup.append( {"home":[8,1,12],"away":[13,11,7],"bye":[5,10],"winners":{"id": [],"team":"none"}, "tv":tv[0]});
