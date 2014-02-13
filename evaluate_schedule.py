@@ -1,6 +1,6 @@
 from model import *
 import pprint
-
+from random import shuffle
 
 
 
@@ -21,14 +21,15 @@ def get_current_strength(session, homenames, awaynames):
 	# AKA the draw probability. Return value is *10000 to make it easier for output on the page.
 	# ({'name':'alice','rating':2.0},{'name':'bob','rating':1.4},{'name':'charlie','rating':3.2})
 	#
-	homeTeam=get_or_create_team(session, homeNames)
-	awayTeam=get_or_create_team(session, awayNames)
+	homeTeam=get_or_create_team(session, homenames)
+	awayTeam=get_or_create_team(session, awaynames)
 	homeRatings = homeTeam.tupleratings()
 	awayRatings = awayTeam.tupleratings()
 	return int(env.quality([homeRatings,awayRatings])*10000)
 
 def create_schedule(session, players):
 	matchup=[]
+	tv = ["samsung", "sony"]
 	if len(players)==14:
 		#(8 1 12 v 13 11 7) (9 14 6 v 4 3 2) (5 10)
 		matchup.append( {"home":[8,1,12],"away":[13,11,7],"bye":[5,10],"winners":{"id": [],"team":"none"}, "tv":tv[0]});
@@ -173,11 +174,66 @@ def create_schedule(session, players):
 		pass
 
 	matchupcopy=matchup
-	matchup=[{"home":[players[i].name for i in match['home']], "away": [players[i].name for i in match['away']] } for match in matchupcopy]	
+	matchup=[{"home":[players[i-1].name for i in match['home']], "away": [players[i-1].name for i in match['away']] } for match in matchupcopy]	
 	matchup_strength=[{"home":match['home'], 'away':match['away'], 'current strength':get_current_strength(session, homenames=match['home'], awaynames=match['away']), 'overall strength':get_overall_strength(session, homenames=match['home'], awaynames=match['away'])} for match in matchup]
-	pprint.pprint(matchup_strength)
+	
+	playerstrengthlist=[]
+	for player in players:
+		currentplayer={'name':player.name, 'current':[], 'overall':[], 'winprob':[]}
+		for match in matchup_strength:
+			for name in match['home']:
+				if name == player.name:
+					currentplayer['current'].append(match['current strength'])
+					currentplayer['overall'].append(match['overall strength'])
+					currentplayer['winprob'].append(getWinProb(get_or_create_team(session, match['home']).overallteamrating, get_or_create_team(session, match['away']).overallteamrating))
+			for name in match['away']:
+				if name == player.name:
+					currentplayer['current'].append(match['current strength'])
+					currentplayer['overall'].append(match['overall strength'])
+					currentplayer['winprob'].append(getWinProb(get_or_create_team(session, match['away']).overallteamrating, get_or_create_team(session, match['home']).overallteamrating))
+		playerstrengthlist.append(currentplayer)
+
+	for player in playerstrengthlist:
+		player['currentavg']=sum(player['current'])/len(player['current'])
+		player['overallavg']=sum(player['overall'])/len(player['overall'])
+		player['winprobavg']=sum(player['winprob'])/len(player['winprob'])
+		if player['name']=='Nick':
+			pprint.pprint(int(player['winprobavg']*10000))
+
+	#playerstrengthlist.sort(key=lambda k:k['currentavg'], reverse=True)
+	#pprint.pprint([{"name":player['name'], "avg": player['currentavg']}for player in playerstrengthlist])
+	
+	#playerstrengthlist.sort(key=lambda k:k['overallavg'], reverse=True)
+	#pprint.pprint([{"name":player['name'], "avg": player['overallavg']}for player in playerstrengthlist])
+	
+	playerstrengthlist.sort(key=lambda k:k['winprobavg'], reverse=True)
+	#pprint.pprint([{"name":player['name'], "avg": player['winprobavg']}for player in playerstrengthlist])			
+	return {'matchups':matchupcopy, 'strengthlist':playerstrengthlist}
+
+
 
 if __name__ == '__main__':
 	session = standaloneSetup()
-	all_players = [session.query(Hitter).all()];
-	create_schedule(session, all_players)
+	all_players = session.query(Hitter).all();
+	schedules=[]
+	print "setup complete."
+	players_to_use = all_players[:14]
+	schedules.append(create_schedule(session, players_to_use))
+	players_to_use.sort(key=lambda k: k.overallhitzskill(), reverse=True)
+	schedules.append(create_schedule(session, players_to_use))
+	players_to_use.sort(key=lambda k: k.name)
+	schedules.append(create_schedule(session, players_to_use))
+
+	
+
+	def rotate(l, n=1):
+		return l[n:]+l[:n]
+	
+	for i in range(10):#len(players_to_use)):
+		shuffle(players_to_use)
+		schedules.append(create_schedule(session, players_to_use))
+
+
+		print "iteration %d of %d " % (i+1, len(players_to_use))
+	
+	pprint.pprint([[{'name':person['name'], 'winprobavg':person['winprobavg']}for person in schedule['strengthlist'] if person['name']=='Nick'] for schedule in schedules])

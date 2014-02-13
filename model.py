@@ -5,6 +5,9 @@ import json, io, pickle, datetime, itertools, pprint, os
 
 from sortedcollection import *
 from trueskill import *
+from math import sqrt
+
+
 
 env=TrueSkill() # current season
 overallenv=TrueSkill()
@@ -257,7 +260,7 @@ def getWinProb(rA=env.Rating(), rB=env.Rating()):
 	# Needs to be determined how accurate this is... does it need half the draw percent removed?
 	deltaMu = rA.mu - rB.mu
 	rsss = sqrt(rA.sigma**2 + rB.sigma**2)
-	return trueskill.mathematics.cdf(deltaMu/rsss)
+	return env.cdf(deltaMu/rsss)
 
 def jsonbackup(session):
 	results = []
