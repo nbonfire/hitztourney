@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<!-- 
+
+guessgames.html
+
+game template.
+
+Required:
+
+(list) topGames : {'home':'Nick, Ziplox, Rosen', 'away': 'Adi, White Rob, Ced', 'strength':81.07}
+
+(list) players: {'name': 'Nick', 'isChecked': True}
+
+
+-->
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>User Stats</title>
+  <link rel="shortcut icon" href="/images/apple-touch-icon.png" type="image/x-icon">
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+   
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/datepicker.css">
+    <script type="text/javascript" src="/js/jquery.min.js"></script>
+    <script type="text/javascript" src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/js/eventdispatch.js"></script>
+    <script type="text/javascript" src="/js/bootstrap-datepicker.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-backstretch/2.0.4/jquery.backstretch.min.js"></script>
+
+
+    <body>
+    <style>
+
+.backstretch img {
+  opacity: 0.6;
+  filter: alpha(opacity=90);
+}   
+    </style>
+    <script type="text/javascript">$.backstretch("/images/mask-sticks.png")</script>
+      <div class="container">
+    <div class="navbar">
+        <a href="#" class="navbar-brand"><img src="/images/HITZ.png" alt="Hitz" class="img-responsive"></a>
+        <ul class="nav navbar-nav">
+          <li>
+            <a href="#">Home</a>
+          </li>
+          <li class="active">
+            <a href="/playerstats">Stats</a>
+          </li>
+          <li>
+            <a href="/games">Games</a>
+          </li>
+        </ul>
+    </div>
+    
+    <div class="jumbotron">
+  <div class="container">
+    <h1>${user.name}</h1>
+    <p>Current season record: ${currentrecord}</p>
+    <p>Overall record: ${user.recordstring()}</p>
+    <!--p><a class="btn btn-primary btn-lg">Learn more</a></p-->
+  </div>
+</div>
+    <div class="row">
+    
+      <div class="col-lg-6">
+        <div class="panel text-right panel-default">
+          <div class="panel-heading"><h3 class="panel-title">BFFs</h3>
+          </div>
+          <p class="text-right"><center><table class="table"><tbody>
+            % for bff in bffs:
+  <tr><td><a href="/playerstats/${bff['name']}">${bff['name']}</a><td>${bff['skill']}(${bff['overallskill']})</td><td>Record:</td><td> ${bff['record']['record']}</td><td>(${bff['record']['percentagewon']}%)</td></tr>
+  % endfor
+          </table></p>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="panel">
+          <div class="panel-heading"><h3 class="panel-title">Rivals</h3>
+          </div>
+          <p class="text-right"><center><table class="table"><tbody>
+            % for rival in rivals:
+  <tr><td><a href="/playerstats/${rival['name']}">${rival['name']}</a><td>${rival['skill']}(${rival['overallskill']})</td><td>Record:</td><td>${rival['record']['record']}</td><td>(${rival['record']['percentagewon']}%)</td></tr>
+  % endfor
+          </table></p>
+        </div>
+      </div>
+      
+    </div>
+    <div class="row">
+    
+      <div class="col-lg-6">
+        <div class="panel text-right panel-default">
+          <div class="panel-heading text-right"><h3 class="panel-title">Best Teams</h3>
+          </div>
+          <p class="text-right"><center><table class="table"><tbody>
+            % for team in bestTeams:
+  <tr><td>${team['names']}<td>${team['teamskill']}(${team['overallteamskill']})</td>
+  <td>${team['record']['record']}</td><td> (${team['record']['percentagewon']}%)</td></tr>
+    % endfor
+          </table></p>
+        </div>
+      </div>
+      
+      <div class="col-lg-6">
+        <div class="panel">
+          <div class="panel-heading"><h3 class="panel-title">Out For Blood!</h3>
+          </div>
+          <p class="text-right"><center><table class="table"><tbody>
+            % for ofb in ofbs:
+  <tr><td><a href="/playerstats/${ofb['name']}">${ofb['name']}</a><td>${ofb['skill']}(${ofb['overallskill']})</td><td>Record:</td><td>${ofb['record']['record']}</td><td>(${ofb['record']['percentagewon']}%)</td></tr>
+  % endfor
+          </table></p>
+        </div>
+      </div>
+      
+    </div>
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="panel">
+          <div class="panel-heading"><h3 class="panel-title">Game History</h3>
+          </div>
+          <p><center>
+          <table class="table"><tbody>
+            % for game in gamehistory:
+  
+            % if game['winstatus']=='win':
+  <tr class="success">
+            % else:
+  <tr class="danger">
+            % endif
+  <td>${game['date']}</td>
+  <td>${game['away'][0]}, ${game['away'][1]}, ${game['away'][2]}</td>
+  <td>vs</td>
+  <td>${game['home'][0]}, ${game['home'][1]}, ${game['home'][2]}</td>
+  <td>${game['record']['record']}</td>
+  <td>${game['record']['percentagewon']}</td>
+  </tr>
+            % endfor
+          
+          </tbody>
+          </table>
+          </center>
+          </p>
+        </div>
+      </div>
+
+
+

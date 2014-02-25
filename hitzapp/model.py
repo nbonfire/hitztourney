@@ -1,8 +1,7 @@
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import ForeignKey, Table, Text, create_engine, Column, Integer, String, PickleType, DateTime, func
-from sqlalchemy.orm import relationship, backref, sessionmaker
-import json, io, pickle, datetime, itertools, pprint, os
 
+import json, io, pickle, DateTime, itertools, pprint, os
+
+from hitzapp import db
 from sortedcollection import *
 from trueskill import *
 from math import sqrt
@@ -14,24 +13,23 @@ overallenv=TrueSkill()
 teamenv=TrueSkill() #current season
 overallteamenv=TrueSkill()
 
-currentseasonstartdate=datetime.datetime(2013,4,21)
+currentseasonstartdate=DateTime.DateTime(2013,4,21)
 
 
 RESET=0
 SIGMA_CUTOFF=5.0
 
-Base = declarative_base()
 
 
-class Hitter(Base):
+class Hitter(db.Model):
 	__tablename__='hitters'
-	id = Column(Integer, primary_key=True)
-	name = Column(String, unique=True)
-	#teams = relationship("Team", backref="hitter")
-	overallrating = Column(PickleType)
-	rating = Column(PickleType) # current season rating
-	lastGamePlayed = Column(DateTime)
-	def __init__(self, name,lastGamePlayed = datetime.datetime(2013,7,1),rating = env.Rating()):
+	id = db.Column(db.Integer, primary_key=True)
+	name = db.Column(db.String, unique=True)
+	#teams = db.relationship("Team", backref="hitter")
+	overallrating = db.Column(db.PickleType)
+	rating = db.Column(db.PickleType) # current season rating
+	lastGamePlayed = db.Column(db.DateTime)
+	def __init__(self, name,lastGamePlayed = DateTime.DateTime(2013,7,1),rating = env.Rating()):
 		self.name = name
 		self.lastGamePlayed = lastGamePlayed
 		self.rating = rating
@@ -40,7 +38,7 @@ class Hitter(Base):
 		return float(int((self.rating.mu - 3.0*self.rating.sigma)*100))/100.0
 	def overallhitzskill(self):
 		return float(int((self.overallrating.mu - 3.0*self.overallrating.sigma)*100))/100.0
-	def recordstring(self, date=currentseasonstartdate):
+	def recorddb.String(self, date=currentseasonstartdate):
 		winninggames=0
 		totalgames=0
 		for team in self.teams:
@@ -52,26 +50,26 @@ class Hitter(Base):
 	def shortdict(self):
 		return {
 			'name':self.name,
-			'record':self.recordstring(),
+			'record':self.recorddb.String(),
 			'skill':self.hitzskill(),
 			'overallskill':self.overallhitzskill()
 		}
 
 
 
-hitter_team_table = Table('hitter_team', Base.metadata,
-	Column('team_id', Integer, ForeignKey('teams.id')),
-	Column('hitter_id', Integer, ForeignKey('hitters.id'))
+hitter_team_table = Table('hitter_team', db.Model.metadata,
+	db.Column('team_id', db.Integer, db.ForeignKey('teams.id')),
+	db.Column('hitter_id', db.Integer, db.ForeignKey('hitters.id'))
 
 )
 
-class Team(Base):
+class Team(db.Model):
 	__tablename__='teams'
-	id = Column(Integer,primary_key=True)
-	name=Column(String)
-	teamrating = Column(PickleType)
-	overallteamrating = Column(PickleType)
-	hitters = relationship("Hitter", secondary=hitter_team_table, backref='teams')
+	id = db.Column(db.Integer,primary_key=True)
+	name=db.Column(db.String)
+	teamrating = db.Column(db.PickleType)
+	overallteamrating = db.Column(db.PickleType)
+	hitters = db.relationship("Hitter", secondary=hitter_team_table, backref='teams')
 
 	def __init__(self):
 		self.teamrating = teamenv.Rating()
@@ -95,14 +93,14 @@ class Team(Base):
 		return (self.teamrating.mu - 3.0*self.teamrating.sigma)
 	def overallteamskill(self):
 		return (self.overallteamrating.mu - 3.0*self.overallteamrating.sigma)
-	def setdatelastplayed(self, datePlayed=datetime.datetime.today()):
+	def setdatelastplayed(self, datePlayed=db.DateTime.db.DateTime.today()):
 		
 		for player in self.hitters:
 			if datePlayed > player.lastGamePlayed:
 				player.lastGamePlayed =datePlayed
 		
 	def getdatelastplayed(self):
-		comparedate=datetime.datetime.today()
+		comparedate=db.DateTime.db.DateTime.today()
 		for player in self.hitters:
 			if player.lastGamePlayed < comparedate:
 				comparedate=player.lastGamePlayed
@@ -134,39 +132,39 @@ class Team(Base):
 
 		
 
-class Game(Base):
+class Game(db.Model):
 	__tablename__='games'
-	id = Column(Integer, primary_key=True)
+	id = db.Column(db.Integer, primary_key=True)
 	#hometeam = ManyToOne('Teams', inverse='homegames')
-	hometeam_id = Column(Integer, ForeignKey('teams.id'))
-	hometeam = relationship("Team",
+	hometeam_id = db.Column(db.Integer, db.ForeignKey('teams.id'))
+	hometeam = db.relationship("Team",
 		primaryjoin=('games.c.hometeam_id==teams.c.id'),
 		remote_side='Team.id',
 		backref=backref('homegames', order_by=id))
 	
 	#awayteam = ManyToOne('Teams', inverse='awaygames')
-	awayteam_id = Column(Integer, ForeignKey('teams.id'))
-	awayteam = relationship("Team", 
+	awayteam_id = db.Column(db.Integer, db.ForeignKey('teams.id'))
+	awayteam = db.relationship("Team", 
 		primaryjoin=('games.c.awayteam_id==teams.c.id'),
 		remote_side='Team.id',
 		backref=backref('awaygames', order_by=id))
 	
 	#winner = ManyToOne('Teams', inverse = 'winner')
-	winner_id = Column(Integer, ForeignKey('teams.id'))
-	winner = relationship('Team',
+	winner_id = db.Column(db.Integer, db.ForeignKey('teams.id'))
+	winner = db.relationship('Team',
 		primaryjoin=('games.c.winner_id==teams.c.id'),
 		remote_side='Team.id', 
 		backref=backref('winninggames', order_by=id))
 	
-	awaypoints = Column(Integer)
-	homepoints = Column(Integer)
-	#date = Field(DateTime, default=datetime.datetime.now())
-	date = Column(DateTime)
+	awaypoints = db.Column(db.Integer)
+	homepoints = db.Column(db.Integer)
+	#date = Field(db.DateTime, default=db.DateTime.db.DateTime.now())
+	date = db.Column(db.DateTime)
 	#event = Field(UnicodeText)
-	event = Column(String)
-	#gameNumber = Field(Integer)
-	gameNumber = Column(Integer)
-	def __init__(self, hometeam, awayteam, winner, homepoints=0,awaypoints=0, date = datetime.datetime.now() ):
+	event = db.Column(db.String)
+	#gameNumber = Field(db.Integer)
+	gameNumber = db.Column(db.Integer)
+	def __init__(self, hometeam, awayteam, winner, homepoints=0,awaypoints=0, date = db.DateTime.db.DateTime.now() ):
 		self.date = date
 		self.hometeam = hometeam
 		self.awayteam = awayteam
@@ -188,7 +186,7 @@ class Game(Base):
 			'away':self.awayteam.listofnames(),
 			'home':self.hometeam.listofnames(),
 			'winner':self.winposition(),
-			'date':datetime.datetime.strftime(self.date,'%Y-%m-%d'),
+			'date':db.DateTime.db.DateTime.strftime(self.date,'%Y-%m-%d'),
 			'score':{
 						'home':self.homepoints,
 						'away':self.awaypoints
@@ -273,9 +271,9 @@ def jsonbackup(session):
 	for game in allgames:
 		results.append(game._asdict())
 
-	with io.open('playersbackup-%s.txt'% str(datetime.date.today()), 'w', encoding='utf-8') as fn:
+	with io.open('playersbackup-%s.txt'% str(db.DateTime.date.today()), 'w', encoding='utf-8') as fn:
 		fn.write(unicode(json.dumps(names, ensure_ascii=False)))
-	with io.open('gamesbackup-%s.txt'% str(datetime.date.today()), 'w', encoding='utf-8') as fg:
+	with io.open('gamesbackup-%s.txt'% str(db.DateTime.date.today()), 'w', encoding='utf-8') as fg:
 		fg.write(unicode(json.dumps(results, ensure_ascii=False)))
 	return json.dumps(results)
 
@@ -295,7 +293,7 @@ def jsonrestore(namefile='playersbackup.txt', gamefile='gamesbackup.txt'):
 		for name in names:
 			get_or_create(session, Hitter, name=name)
 		for game in results:
-			completeGame(session,game['home'], game['away'], game['winner'], game['score']['away'], game['score']['home'], datetime.datetime.strptime(game['date'], '%Y-%m-%d %H:%M:%S'))
+			completeGame(session,game['home'], game['away'], game['winner'], game['score']['away'], game['score']['home'], db.DateTime.db.DateTime.strptime(game['date'], '%Y-%m-%d %H:%M:%S'))
 		session.close()
 	else:
 		print "DB file hitz.sqlite already exists. Delete or move it before running this command."
@@ -313,7 +311,7 @@ def getLastPlayed(session, homeNames,awayNames):
 	else:
 		return awayDate
 
-def completeGame(session,homeTeam,awayTeam,winner,awaypoints=0,homepoints=0,datePlayed=datetime.datetime.today()):
+def completeGame(session,homeTeam,awayTeam,winner,awaypoints=0,homepoints=0,datePlayed=db.DateTime.db.DateTime.today()):
 	homers=get_or_create_team(session, homeTeam)
 	awayers=get_or_create_team(session, awayTeam)
 	homers.setdatelastplayed(datePlayed)
@@ -350,7 +348,7 @@ def completeGame(session,homeTeam,awayTeam,winner,awaypoints=0,homepoints=0,date
 	session.add(newgame)
 	session.commit()
 
-def newSeasonRatingRecalculation(session, newDate=datetime.datetime.today()):
+def newSeasonRatingRecalculation(session, newDate=db.DateTime.db.DateTime.today()):
 	global currentseasonstartdate
 	currentseasonstartdate = newDate
 	games = session.query(Game).filter(date>newDate)
@@ -401,7 +399,7 @@ def getUserList(session):
 	
 	return listofplayers
 	#return [item for sublist in session.query(Hitter.name).all() for item in sublist] 
-def getGameHistoryForUser(session, hitterObject, date=datetime.datetime(2013,1,1)):
+def getGameHistoryForUser(session, hitterObject, date=db.DateTime.db.DateTime(2013,1,1)):
 	gameids=session.query(Game.id).join(Game.awayteam).join(Team.hitters).filter(
 		Team.hitters.contains(hitterObject)).filter(Game.date>date).distinct(
 		).all() + session.query(Game.id).join(Game.hometeam).join(Team.hitters).filter(Team.hitters.contains(
@@ -438,7 +436,7 @@ def getTeamVsRecord(session, hitterObject, awayteam, hometeam):
 	return {'record':'%d - %d'%(awaywins, homewins), 'percentagewon':percentage}
 
 
-def currentSeasonRecordString(session, hitterObject):
+def currentSeasonRecorddb.String(session, hitterObject):
 	gameids=session.query(Game.id).join(Game.awayteam).join(Team.hitters).filter(
 		Team.hitters.contains(hitterObject)).filter(Game.date>currentseasonstartdate).distinct().all() + session.query(
 		Game.id).join(Game.hometeam).join(Team.hitters).filter(
@@ -452,7 +450,7 @@ def currentSeasonRecordString(session, hitterObject):
 	totalgames=len(games)
 	return "%d - %d" % (winninggames, (totalgames-winninggames))
 
-def recordstring1v1(session, playername, opponentname):
+def recorddb.String1v1(session, playername, opponentname):
 	player=get_or_create(session, Hitter, name=playername)
 	opponent=get_or_create(session, Hitter, name=opponentname)
 	return record1v1(session, player, opponent)
@@ -590,7 +588,7 @@ def standaloneSetup():
 	Session = sessionmaker(bind=engine)
 
 	session = Session()
-	Base.metadata.create_all(engine)
+	db.Model.metadata.create_all(engine)
 	return session
 
 
@@ -598,14 +596,14 @@ if __name__ == "__main__":
 	
 	if RESET==1:
 		jsonrestore()
-	#Base = declarative_base()
+	
 	engine = create_engine('sqlite:///hitz.sqlite')
 	
 
 	Session = sessionmaker(bind=engine)
 
 	session = Session()
-	Base.metadata.create_all(engine)
+	db.Model.metadata.create_all(engine)
 
 	#setup_all()
 	#create_all()
@@ -624,7 +622,7 @@ if __name__ == "__main__":
 			
 
 	
-		#thisgame = Games.get_by_or_init(hometeam=homers, awayteam=awayers, winner=game['winner'], date=datetime.datetime.now)
+		#thisgame = Games.get_by_or_init(hometeam=homers, awayteam=awayers, winner=game['winner'], date=db.DateTime.db.DateTime.now)
 	# --------------------------------------------------
 	# Simple Queries
  

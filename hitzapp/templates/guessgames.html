@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+<!-- 
+
+guessgames.html
+
+game template.
+
+Required:
+
+(list) topGames : {'home':'Nick, Ziplox, Rosen', 'away': 'Adi, White Rob, Ced', 'strength':81.07}
+
+(list) players: {'name': 'Nick', 'isChecked': True}
+
+
+-->
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<title>Quality HITZ Games</title>
+	<link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon">
+	<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+   
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/datepicker.css">
+    <script type="text/javascript" src="/js/jquery.min.js"></script>
+    <script type="text/javascript" src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/js/eventdispatch.js"></script>
+    <script type="text/javascript" src="/js/bootstrap-datepicker.js"></script>
+
+
+
+    <body>
+    <div class="navbar">
+        <a href="#" class="navbar-brand">Hitz</a>
+        <ul class="nav navbar-nav">
+          <li>
+            <a href="#">Home</a>
+          </li>
+          <li >
+            <a href="../playerstats">Stats</a>
+          </li>
+          <li class="active">
+            <a href="#">Games</a>
+          </li>
+        </ul>
+    </div>
+
+    <div class="container">
+    <form class="form-inline" role="form">
+    <div class="row">
+    <div class=".col-md-4 .col-md-offset-8 pull-right">
+    <input type="text" id="datePlayed" value="2013-07-10" data-date-format="yyyy-mm-dd" class="datepicker" >
+</div>
+    </div>
+    <div class="row">
+    <div class="col-lg-6">
+      <div class="panel">
+  <div class="panel-heading">
+    <h3 class="panel-title">Away</h3>
+  </div>
+  <div class="panel-body">
+  <div class="row">
+    <div class="col-lg-4">
+    
+    <select class="form-control awaychoice" width=33%>
+    % for player in players:
+  <option value="${player['name']}">${player['name']}</option>
+    % endfor
+  
+  </select >
+  </div>
+  <div class="col-lg-4">
+  <select class="form-control awaychoice" width=33%>
+  % for player in players:
+  <option value="${player['name']}">${player['name']}</option>
+    % endfor
+</select>
+</div>
+  <div class="col-lg-4">
+<select class="form-control awaychoice" width=33%>
+ % for player in players:
+  <option value="${player['name']}">${player['name']}</option>
+    % endfor
+</select>
+</div></div>
+  </div>
+</div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="panel">
+  <div class="panel-heading">
+    <h3 class="panel-title">Home</h3>
+  </div>
+  <div class="panel-body">
+  <div class="row">
+  <div class="col-lg-4">
+    <select class="form-inline form-control homechoice">
+% for player in players:
+  <option value="${player['name']}">${player['name']}</option>
+    % endfor
+  </select>
+  </div>
+  <div class="col-lg-4">
+  <select class="form-inline form-control homechoice">
+% for player in players:
+  <option value="${player['name']}">${player['name']}</option>
+    % endfor
+</select>
+</div>
+<div class="col-lg-4">
+<select class="form-inline form-control homechoice">
+% for player in players:
+  <option value="${player['name']}">${player['name']}</option>
+    % endfor
+</select>
+</div>
+</div>
+  </div>
+</div>
+    </div>
+    </div>
+    </form>
+    <div class="row" id="probability">
+    
+    <div class="col-lg-2 align-center">
+    <input type="text" class="form-control form-inline" id="awayscore" placeholder="Away Score">
+    <center><button type="button" value="away" class="pickwinner btn btn-success form-inline" href="#">Away won</button></center>
+    </div>
+    <div class="col-lg-8">
+    <div class="alert alert-info">
+    <span class="probabilityalert">Choose some teams to calculate the probability of a draw.</span>
+    </div>
+    <center><button type="button" value="swap" class="swap btn btn-info form-inline" href="#">Swap sides</button>
+    </div>
+    <div class="col-lg-2 align-center">
+    <input type="text" class="form-control form-inline" id="homescore" placeholder="Home Score">
+    <center><button type="button" value="home" class="pickwinner btn btn-success form-inline" href="#">Home won</button></center>
+    
+    </div>
+    
+    </form>
+    </div>
+    <div class="row">
+    <div class="col-lg-8">
+    
+    <div class="row">
+      <div class="progress progress-striped active" id="gamecalcprogress">
+        <div class="progress-bar" id="gamecalcprogressbar"  role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+          <span class='sr-only'></span>
+        </div>
+      </div>
+      <table id="top10gamestable" class="table table-condensed table-striped">
+      <thead><tr>
+      <th>Game</th><th class='text-right'>Probability of a draw</th>
+      </tr>
+      </thead>
+      <tbody>
+      % for game in topGames:
+  
+  	  <tr><td class='rankedgame'><span class="awayTeam"><span class="away0">${game['away'][0]}</span>, <span class="away1">${game['away'][1]}</span>, <span class="away2">${game['away'][2]}</span></span> vs <span class="homeTeam"><span class="home0">${game['home'][0]}</span>, <span class="home1">${game['home'][1]}</span>, <span class="home2">${game['home'][2]}</span></span></td><td class="text-right"><span class="strength">${"{0:.2f}".format(game['strength'])}</span>%</td></tr>
+  	  % endfor
+      
+      </tbody>
+      </table>
+    </div>
+    </div>
+    <div class="col-lg-4">
+    <!--   insert multi-select box of players and an update button here-->
+    <form id="names">
+    	<fieldset>
+    		<legend>Choose Players</legend>
+    		<label id="#working"></label>
+    		<!--<select multiple="multiple">
+    		
+    		</select> -->
+    		% for player in players:
+    		<label class="checkbox">
+    		<input type="checkbox" value="${player['name']}" 
+          % if player['isChecked']:
+            checked
+          % endif
+         class="hitters"> <a href="playerstats/${player['name']}">${player['name']} - <span value="${player['name']}" class="playerrank">${player['playerrank']}</span> (Lifetime: <span value="${player['name']}" class="overallplayerrank">${player['overallplayerrank']}</span>)</a>
+    		</label>
+    		% endfor
+    		<div class="form-actions">
+    		<button type="button" class="btn btn-default recalc" id="recalc" href="#">Submit</button>
+    		</div>
+
+    	</fieldset>
+    </form>
+    </div>
+    </div>
+
+<script type="text/javascript">
+  $(function(){
+      
+    
+  
+  
+  $('.datepicker').datepicker();
+  
+  var server = new ServerEventsDispatcher(['topgames', 'currentgamedrawprobability']);
+  server.bind('topgames', function(evt){
+      //var table = document.getElementByID("top10gamestable");
+      var tbody = $('#top10gamestable').find("tbody")[0];
+      var rows = tbody.getElementsByTagName("tr");
+      console.log(evt)
+      var populateRow = function(index, data )
+      {
+        var row = rows[index];
+        
+        for(i=0;i<3;i++){
+        $(row).find('.away'+i).html(data['away'][i]);
+        $(row).find('.home'+i).html(data['home'][i]);
+        }
+        /*
+        var awayTeamCell = cells[0];
+        var homeTeamCell = cells[1];
+        var strengthCell = cells[2];
+        $(awayTeamCell).html(data['away'][0]+", "+data['away'][1]+", "+data['away'][2]);
+        $(homeTeamCell).html(data['home'][0]+", "+data['home'][1]+", "+data['home'][2]);*/
+        $(row).find('.strength').html(data['strength']);
+
+        return false;
+
+      }
+      if(evt['percentComplete'!="100"]) $('#gamecalcprogressbar').show();
+      $('#gamecalcprogress').addClass('active')
+      for(j=0;j<evt['games'].length;j++){//s/10/evt.data.length
+        console.log('populate')
+        populateRow(j, evt['games'][j]);
+      }
+      //$('#gamecalcprogressbar').prop('aria-valuenow') = evt['percentComplete']
+      $('#gamecalcprogressbar').css('width', evt['percentComplete']+"%")
+      $('#gamecalcprogressbar').css('display', "block")
+      $('#gamecalcprogressbar').html(evt['percentComplete']+"%")
+      if(evt['percentComplete']=="100"){
+        $('#gamecalcprogressbar').html("Finished!")
+        $('#gamecalcprogress').removeClass('active')
+        $('#gamecalcprogressbar').fadeOut(duration=800)
+        
+      }
+
+      $("#working").html = evt['isdone'];
+      //console($('#names').filter('input:checked'));
+      /*$('.recalc').click(function() {
+        var names = $("input:checked");
+        var namelist = [];
+        for (j=0;j<names.length;j++){
+          namelist[j]=names[j].value;
+        }
+        alert(namelist);
+        server.trigger('gettop10games', namelist);
+        return false;
+      });*/
+      return false;
+  });
+  server.bind('currentgamedrawprobability', function(evt){
+    /*
+     *
+     * SHould be in the form {
+     * 'event':'currentgamedrawprobability',
+     * 'data':{'awayNames':["player1","player2","player3"],
+               'homeNames':["player4","player5","player6"],
+               'strength': '63.28',
+               'teamstrength':'64.30' <-- not used unless teamsigma is way low.
+          }
+    
+        }
+     *
+     */
+     console.log(evt['strength'])
+     $(".probabilityalert").parent().addClass("alert-info")
+     $(".probabilityalert").parent().removeClass("alert-danger")
+     $(".probabilityalert").html( "Draw probability: "+evt['strength']);
+  })
+  
+      
+  /*function recalculate() {
+        var form = $("#names")
+        var names = $("input:checked").text;
+        console.log(names);
+        server.trigger('gettop10games', names)
+  }*/
+  
+      $('.recalc').click(function() {
+      //alert('hurr');
+        var names = $("input:checked");
+        var namelist = [];
+
+        for (j=0;j<names.length;j++){
+          namelist[j]=names[j].value;
+        }
+        var namedict = {"name":"players","data":namelist};
+        console.log(JSON.stringify(namedict));
+        /*server.trigger('gettop10games', namelist);
+        return false;*/
+        $.ajax({
+          type: "GET",
+          url: "/update",
+          data: "players="+JSON.stringify(namedict),
+        /*success: function(data){
+      
+          $("#"+match).html(data);
+      
+          return false;
+        }*/
+
+        });
+      });
+      $('.rankedgame').click(function() {
+        
+        //console.log($(this).find('.awayTeam').first().find('span')[0].innerHTML)
+        $(this).find('.awayTeam').first().find('span').each(function(index){
+          //console.log($('.awaychoice').slice(index).first().html())
+          //console.log($(this).first().html())
+          $('.awaychoice').slice(index).first().val($(this).html())
+          //console.log($('.awaychoice').slice(index).first().val())
+          //console.log(this)
+        })
+        $(this).find('.homeTeam').first().find('span').each(function(index){
+          //console.log($('.awaychoice').slice(index).first().html())
+          //console.log($(this).first().html())
+          $('.homechoice').slice(index).first().val($(this).html())
+          //console.log($('.awaychoice').slice(index).first().val())
+          //console.log(this)
+        })
+        $('select').first().change();
+
+
+        /*
+        $('.awaychoice').each(function(index){
+
+          $(this).val(awaynames[index])
+          console.log(awaynames[index])
+        })*/
+        //console.log(awaynames)
+
+        /*
+        awaynames.append(.html())
+        $('.awayteam').each(function(index){
+          $(this).val()
+          $(game).find('.'+$(game).find('.away'+index).html()).prop('selected'=True)
+        })*/
+        
+      })
+      $('select').change(function(){
+        
+        var namelist = [];
+        var awayteamlist = [];
+        var hometeamlist = [];
+        var shouldWeSelect = true;
+        $(".awaychoice option:selected").each(function(index){
+          for (l=0;l<index;l++){
+            if ($(this).text() ==namelist[l]) shouldWeSelect= false;
+          }
+          namelist[index]=$(this).text();
+          awayteamlist[index]=$(this).text();
+          
+        });
+        $(".homechoice option:selected").each(function(index){
+          for (l=0;l<index+3;l++){
+            if ($(this).text() ==namelist[l]) shouldWeSelect= false;
+          }
+          namelist[index+3]=$(this).text();
+          hometeamlist[index]=$(this).text();
+          
+        });
+        if (shouldWeSelect == true){
+          $.ajax({
+            type: "GET",
+            url: "/drawprobability",
+            data: "awayteam="+JSON.stringify(awayteamlist)+"&hometeam="+JSON.stringify(hometeamlist),
+        /*success: function(data){
+      
+          $("#"+match).html(data);
+      
+          return false;
+        }*/
+
+        });
+        }
+        else {
+          $(".probabilityalert").html("Invalid match, make sure all the players are different");
+          $(".probabilityalert").parent().removeClass("alert-info")
+          $(".probabilityalert").parent().addClass("alert-danger")
+        }
+        console.log(namelist);
+        console.log(awayteamlist);
+        console.log(hometeamlist);
+      });
+      $('.swap').click(function(){
+        var awayteamlist = [];
+        var hometeamlist = [];
+        $(".awaychoice option:selected").each(function(index){
+          
+            awayteamlist[index]=$(this).val();
+
+          
+        })
+        //console.log(awayteamlist)
+        $(".homechoice option:selected").each(function(index){
+          
+            hometeamlist[index]=$(this).val();
+          
+        })
+        //console.log(hometeamlist)
+        //$('.awaychoice').slice(index).first().val($(this).html())
+        for (l=0;l<3;l++){
+          $('.awaychoice').slice(l).first().val(hometeamlist[l])
+          $('.homechoice').slice(l).first().val(awayteamlist[l])
+        }
+      })
+
+      $('.pickwinner').click(function(){
+        
+        var namelist = [];
+        var awayteamlist = [];
+        var hometeamlist = [];
+        var shouldWeSelect = true;
+        var thebutton = this;
+        $(".awaychoice option:selected").each(function(index){
+          for (l=0;l<index;l++){
+            if ($(this).text() ==namelist[l]) shouldWeSelect= false;
+          }
+          namelist[index]=$(this).text();
+          awayteamlist[index]=$(this).text();
+          
+        });
+        $(".homechoice option:selected").each(function(index){
+          for (l=0;l<index+3;l++){
+            if ($(this).text() ==namelist[l]) shouldWeSelect= false;
+          }
+          namelist[index+3]=$(this).text();
+          hometeamlist[index]=$(this).text();
+          
+        });
+        console.log($(this).val())
+        if (shouldWeSelect == true){
+          $.ajax({
+            type: "GET",
+            url: "/pickwinner",
+            data: "away="+JSON.stringify(awayteamlist)+"&home="+JSON.stringify(hometeamlist)+"&winner="+$(thebutton).val()+"&date="+JSON.stringify($('#datePlayed').val()),
+        /*success: function(data){
+      
+          $("#"+match).html(data);
+      
+          return false;
+        }*/
+
+        });
+        }
+        else {
+          $(".probabilityalert").html("Invalid match, make sure all the players are different");
+          $(".probabilityalert").parent().removeClass("alert-info")
+          $(".probabilityalert").parent().addClass("alert-danger")
+        }
+        console.log(namelist);
+        console.log(awayteamlist);
+        console.log(hometeamlist);
+      })
+
+});
+/*$('.recalc').click(function() {
+        var names = $("#names").filter(':checked').value;
+        alert(names);
+        server.trigger('gettop10games', names);
+        return false;
+      });*/
+
+
+
+    </script>
+    </body>
