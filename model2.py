@@ -5,8 +5,6 @@ import json, io, pickle, datetime, itertools, pprint, os
 
 from sortedcollection import *
 from trueskill import *
-import math
-import trueskill
 
 env=TrueSkill() # current season
 overallenv=TrueSkill()
@@ -42,41 +40,20 @@ class Hitter(Base):
 	def overallhitzskill(self):
 		return float(int((self.overallrating.mu - 3.0*self.overallrating.sigma)*100))/100.0
 	def recordstring(self, date=currentseasonstartdate):
-		winninggamecount=0
-		totalgamecount=0
+		winninggames=0
+		totalgames=0
 		for team in self.teams:
-			homegames= [game for game in team.homegames if game.date > date]
-			awaygames = [game for game in team.awaygames if game.date > date]
-			winninggames=[game for game in team.winninggames if game.date > date]
-			totalgamecount=totalgamecount+len(homegames)+len(awaygames)
-			winninggamecount=winninggamecount+len(winninggames)
-		return "%d - %d" %(winninggamecount, (totalgamecount-winninggamecount))
-	def overallrecordstring(self):
-		return self.recordstring(datetime.datetime(2013,1,1))
-	def isactive(self, date=currentseasonstartdate):
-		homegames=[]
-		awaygames=[]
-		for team in self.teams:
-			homegames= [game for game in team.homegames if game.date > date]
-			awaygames = [game for game in team.awaygames if game.date > date]
-		if len(homegames + awaygames)>0:
-			return True
-		else:
-			return False
-	def haseverplayed(self):
-		return self.isactive(datetime.datetime(2013,1,1))
-
+			totalgames=totalgames+len(team.homegames)+len(team.awaygames)
+			winninggames=winninggames+len(team.winninggames)
+		return "%d - %d" %(winninggames, (totalgames-winninggames))
 	def __repr__(self):
 		return "<%s, %s, %s>" % (self.name, self.lastGamePlayed, str(self.rating.mu - 3.0*self.rating.sigma))
 	def shortdict(self):
 		return {
 			'name':self.name,
 			'record':self.recordstring(),
-			'overallrecord':self.overallrecordstring(),
 			'skill':self.hitzskill(),
-			'overallskill':self.overallhitzskill(),
-			'active':self.isactive(),
-			'activeever':self.haseverplayed()
+			'overallskill':self.overallhitzskill()
 		}
 
 
@@ -104,7 +81,6 @@ class Team(Base):
 		self.overallteamrating = overallteamenv.Rating()
 	def __repr__(self):
 		return "<%s, %s, %s last played: %s team rating: %s>" % (self.hitters[0].name, self.hitters[1].name, self.hitters[2].name, self.getdatelastplayed(),str(self.teamrating.mu - 3.0*self.teamrating.sigma))
-
 
 	def tupleratings(self):
 		ratingslist=[]
@@ -258,11 +234,7 @@ def get_or_create_team(session, findplayers):
 			session.commit()
 	return create_team
 def getGamesForHitter(session, player, date=currentseasonstartdate):
-	gameslist= session.query(Game).join(Team.games).filter(Team.hitters.contains(player)).filter(Game.date>=date).order_by(Game.date.desc()).all()
-	teamslist=player.teams
-
-
-	return [{'game':g,'winstatus':'win' if g.winner in teamslist else 'loss'} for g in gameslist]
+	return session.query(Game).join(Team.games).filter(Team.hitters.contains(player)).filter(Game.date>=date).order_by(Game.date.desc()).all()
 
 def getRecordsBelowSigma(session, sigma=SIGMA_CUTOFF):
 	records = session.query(Hitter).all()
@@ -290,14 +262,14 @@ def getStrength(session, homeNames,awayNames):
 	awayRatings = awayTeam.tupleoverallratings()
 	return int(env.quality([homeRatings,awayRatings])*10000)
 
-def getWinProb(rA, rB):
+def getWinProb(rA=env.Rating(), rB=env.Rating()):
 	#
-	# rA and rB are lists of hitters list(Team.hitters)
 	# Using formula from https://github.com/sublee/trueskill/issues/1
-	# Assumes that skill is additive
-	deltaMu = sum( [x.rating.mu for x in list(rA)]) - sum( [x.rating.mu for x in list(rB)])
-	rsss = math.sqrt(sum([x.rating.sigma**2 for x in list(rA)]) + sum([x.rating.sigma**2 for x in list(rB)]))
-	return int(trueskill.backends.cdf(deltaMu/rsss)*10000)
+	# Only working for 1v1 :( plus
+	# Needs to be determined how accurate this is... does it need half the draw percent removed?
+	deltaMu = rA.mu - rB.mu
+	rsss = sqrt(rA.sigma**2 + rB.sigma**2)
+	return trueskill.mathematics.cdf(deltaMu/rsss)
 
 def jsonbackup(session):
 	results = []
@@ -444,15 +416,14 @@ def getGameHistoryForUser(session, hitterObject, date=datetime.datetime(2013,1,1
 		).all() + session.query(Game.id).join(Game.hometeam).join(Team.hitters).filter(Team.hitters.contains(
 		hitterObject)).filter(Game.date>date).distinct().all()
 	gameslist = []
-	if len(gameids)>0: 	
-		for game in session.query(Game).filter(Game.id.in_(flatten(gameids))).all():
-			gamedict=game._asdict()
-			gamedict['record']=getTeamVsRecord(session, hitterObject, game.awayteam, game.hometeam)
-			if hitterObject.name in gamedict[gamedict['winner']]:
-				gamedict['winstatus']="win"
-			else:
-				gamedict['winstatus']='loss'
-			gameslist.append(gamedict)
+	for game in session.query(Game).filter(Game.id.in_(flatten(gameids))).all():
+		gamedict=game._asdict()
+		gamedict['record']=getTeamVsRecord(session, hitterObject, game.awayteam, game.hometeam)
+		if hitterObject.name in gamedict[gamedict['winner']]:
+			gamedict['winstatus']="win"
+		else:
+			gamedict['winstatus']='loss'
+		gameslist.append(gamedict)
 	gameslist.sort(key=lambda k: k['id'], reverse=True)
 	return gameslist
 
@@ -467,18 +438,12 @@ def getTeamVsRecord(session, hitterObject, awayteam, hometeam):
 	allgames=homegamesagainstsecondteam+awaygamesagainstsecondteam
 	homewins=0
 	awaywins=0
-	wins=0
-	losses=0
 	for game in session.query(Game).filter(Game.id.in_(allgames)).all():
 		if game.winner == awayteam:
 			awaywins= awaywins+1 
 		else:
 			homewins = homewins+1
-		if hitterObject in game.winner.hitters:
-			wins=wins+1
-		else:
-			losses=losses+1
-	percentage = float(int(float(wins*10000)/float(wins + losses)))/100.0 
+	percentage = float(int(float(awaywins*10000)/float(awaywins + homewins)))/100.0 
 	return {'record':'%d - %d'%(awaywins, homewins), 'percentagewon':percentage}
 
 
@@ -625,9 +590,6 @@ def rivals(session, hitterobject):
 
 	listofrivals.sort(key=lambda k: (50-k['record']['percentagewon'])**2)
 	return listofrivals[:5]
-
-
-
 
 
 def standaloneSetup():

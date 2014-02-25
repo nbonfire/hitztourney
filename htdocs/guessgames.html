@@ -32,7 +32,7 @@ Required:
 
     <body>
     <div class="navbar">
-        <a href="#" class="navbar-brand">Hitz</a>
+        <img href="#" class="navbar-brand" src='/images/HITZ.png' alt='HITZ'>
         <ul class="nav navbar-nav">
           <li>
             <a href="#">Home</a>
@@ -50,7 +50,7 @@ Required:
     <form class="form-inline" role="form">
     <div class="row">
     <div class=".col-md-4 .col-md-offset-8 pull-right">
-    <input type="text" id="datePlayed" value="2013-07-10" data-date-format="yyyy-mm-dd" class="datepicker" >
+    <input type="text" id="datePlayed" data-date-format="yyyy-mm-dd" class="datepicker" >
 </div>
     </div>
     <div class="row">
@@ -126,17 +126,17 @@ Required:
     
     <div class="col-lg-2 align-center">
     <input type="text" class="form-control form-inline" id="awayscore" placeholder="Away Score">
-    <center><button type="button" value="away" class="pickwinner btn btn-success form-inline" href="#">Away won</button></center>
+    <center><button type="button" value="away" class="pickwinner btn btn-info form-inline" href="#">Away won</button></center>
     </div>
     <div class="col-lg-8">
     <div class="alert alert-info">
     <span class="probabilityalert">Choose some teams to calculate the probability of a draw.</span>
     </div>
-    <center><button type="button" value="swap" class="swap btn btn-info form-inline" href="#">Swap sides</button>
+    <center><button type="button" value="swap" class="swap btn btn-default form-inline" href="#">Swap sides</button>
     </div>
     <div class="col-lg-2 align-center">
     <input type="text" class="form-control form-inline" id="homescore" placeholder="Home Score">
-    <center><button type="button" value="home" class="pickwinner btn btn-success form-inline" href="#">Home won</button></center>
+    <center><button type="button" value="home" class="pickwinner btn btn-info form-inline" href="#">Home won</button></center>
     
     </div>
     
@@ -159,7 +159,17 @@ Required:
       <tbody>
       % for game in topGames:
   
-  	  <tr><td class='rankedgame'><span class="awayTeam"><span class="away0">${game['away'][0]}</span>, <span class="away1">${game['away'][1]}</span>, <span class="away2">${game['away'][2]}</span></span> vs <span class="homeTeam"><span class="home0">${game['home'][0]}</span>, <span class="home1">${game['home'][1]}</span>, <span class="home2">${game['home'][2]}</span></span></td><td class="text-right"><span class="strength">${"{0:.2f}".format(game['strength'])}</span>%</td></tr>
+  	  <tr><td class='rankedgame'><span class="awayTeam">
+        <span class="away0">${game['away'][0]}</span>, 
+        <span class="away1">${game['away'][1]}</span>, 
+        <span class="away2">${game['away'][2]}</span></span> 
+        vs 
+        <span class="homeTeam">
+          <span class="home0">${game['home'][0]}</span>, 
+          <span class="home1">${game['home'][1]}</span>, 
+          <span class="home2">${game['home'][2]}</span></span>
+        </td><td class="text-right">
+          <span class="strength">${"{0:.2f}".format(game['strength'])}</span>%</td></tr>
   	  % endfor
       
       </tbody>
@@ -171,7 +181,7 @@ Required:
     <form id="names">
     	<fieldset>
     		<legend>Choose Players</legend>
-    		<label id="#working"></label>
+    		<label id="working"></label>
     		<!--<select multiple="multiple">
     		
     		</select> -->
@@ -199,7 +209,7 @@ Required:
     
   
   
-  $('.datepicker').datepicker();
+  $('.datepicker').datepicker("setDate", new Date());
   
   var server = new ServerEventsDispatcher(['topgames', 'currentgamedrawprobability']);
   server.bind('topgames', function(evt){
@@ -274,7 +284,7 @@ Required:
      console.log(evt['strength'])
      $(".probabilityalert").parent().addClass("alert-info")
      $(".probabilityalert").parent().removeClass("alert-danger")
-     $(".probabilityalert").html( "Draw probability: "+evt['strength']);
+     $(".probabilityalert").html( "Draw probability: "+evt['strength']+" Away team win probability: "+evt['winProbability']);
   })
   
       
@@ -387,6 +397,9 @@ Required:
           $(".probabilityalert").parent().removeClass("alert-info")
           $(".probabilityalert").parent().addClass("alert-danger")
         }
+        $('.pickwinner').removeClass("btn-success");
+        $('.pickwinner').removeClass('btn-danger');
+        $('.pickwinner').addClasS('btn-info');
         console.log(namelist);
         console.log(awayteamlist);
         console.log(hometeamlist);
@@ -412,6 +425,9 @@ Required:
           $('.awaychoice').slice(l).first().val(hometeamlist[l])
           $('.homechoice').slice(l).first().val(awayteamlist[l])
         }
+        $('.pickwinner').removeClass('btn-success');
+        $('.pickwinner').removeClass('btn-danger');
+        $('.pickwinner').addClass('btn-info');
       })
 
       $('.pickwinner').click(function(){
@@ -437,18 +453,24 @@ Required:
           hometeamlist[index]=$(this).text();
           
         });
+        homescore=$("#homescore").text();
+        awayscore=$('#awayscore').text();
         console.log($(this).val())
         if (shouldWeSelect == true){
           $.ajax({
             type: "GET",
             url: "/pickwinner",
-            data: "away="+JSON.stringify(awayteamlist)+"&home="+JSON.stringify(hometeamlist)+"&winner="+$(thebutton).val()+"&date="+JSON.stringify($('#datePlayed').val()),
-        /*success: function(data){
+            data: "away="+JSON.stringify(awayteamlist)+"&home="+JSON.stringify(hometeamlist)+"&winner="+$(thebutton).val()+"&date="+JSON.stringify($('#datePlayed').val())+"&homepoints="+JSON.stringify(awayscore)+"&awaypoints="+JSON.stringify(awayscore),
+            success: function(data){
+              $('.pickwinner').removeClass('btn-success');
+              $('.pickwinner').removeClass('btn-info');
+              $('.pickwinner').addClass('btn-danger');
+              $(thebutton).removeClass('btn-danger');
+              $(thebutton).removeClass('btn-info');
+              $(thebutton).addClass("btn-success");
       
-          $("#"+match).html(data);
-      
-          return false;
-        }*/
+              return false;
+            },
 
         });
         }

@@ -39,7 +39,7 @@
     </div>
     <div class='row'>
       <div class='container'>
-      <div class='col-lg-12'><h3>Current Season Rankings</h3><a href='/overallstats'>switch to overall ranking</a></div>
+      <div class='col-lg-12'><h3>Overall Rankings</h3><a href='/playerstats'>switch to current season ranking</a></div>
     </div>
     </div>
     <div class="row">
@@ -48,8 +48,8 @@
         </div>
         <p class="text-right"><center><table class="table"><tbody>
             % for player in players:
-
-  <tr><td>${loop.index+1}</td><td><a href="/playerstats/${player['name']}">${player['name']}</a><td>${player['skill']}</td><td>(Lifetime:${player['overallskill']})</td><td>Record: ${player['record']}</td></tr>
+            
+  <tr><td>${loop.index+1}</td><td><a href="/playerstats/${player['name']}">${player['name']}</a><td>${player['overallskill']}</td><td>(Current Season: ${player['skill']})</td><td>Record: ${player['overallrecord']}</td></tr>
 
   % endfor
           </table></p>

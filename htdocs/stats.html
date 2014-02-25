@@ -17,7 +17,7 @@ Required:
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>User Stats</title>
+  <title>User Stats for ${user.name}</title>
   <link rel="shortcut icon" href="/images/apple-touch-icon.png" type="image/x-icon">
   <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
    
@@ -58,8 +58,10 @@ Required:
     <div class="jumbotron">
   <div class="container">
     <h1>${user.name}</h1>
-    <p>Current season record: ${currentrecord}</p>
-    <p>Overall record: ${user.recordstring()}</p>
+    <p>Current season record: ${user.recordstring()}</p>
+    <p>Overall record: ${user.overallrecordstring()}</p>
+    <p>Current season rating: ${user.hitzskill()}</p>
+    <p>Overall rating: ${user.overallhitzskill()}</p>
     <!--p><a class="btn btn-primary btn-lg">Learn more</a></p-->
   </div>
 </div>

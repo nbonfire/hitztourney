@@ -13,6 +13,7 @@ import itertools
 from pubsub import pub  
 from sortedcollection import *
 from model import *
+import math
 
 
 defaultGamesList = list()
@@ -373,14 +374,20 @@ class HitzApp(object):
 	@cherrypy.expose
 	def games(self):
 		return Template(filename='htdocs/guessgames.html', input_encoding = 'utf-8').render(topGames=getDefaultGamesList(cherrypy.request.db),players=getPlayersForTemplate(session=cherrypy.request.db))
-
+	@cherrypy.expose
+	def overallstats(self):
+		playerList = getUserList(cherrypy.request.db)
+		playerList.sort(key=lambda player: player['overallskill'], reverse=True)
+		return Template(filename='htdocs/overallranking.html', input_encoding='utf-8').render(players = playerList)
+		
 	@cherrypy.expose
 	def playerstats(self, user=None):
 		if not user:
 			return Template(filename='htdocs/chooseuserforstats.html', input_encoding='utf-8').render(players = getUserList(cherrypy.request.db))
 		else:
 			
-			statssubject=cherrypy.request.db.query(Hitter).filter(Hitter.name==user).first()
+			#statssubject=cherrypy.request.db.query(Hitter).filter(Hitter.name==user).first()
+			statssubject=get_or_create(cherrypy.request.db, Hitter, name=user)
 			return Template(filename='htdocs/stats.html', input_encoding='utf-8').render(
 				user=statssubject,
 				rivals=rivals(cherrypy.request.db, statssubject),
@@ -414,7 +421,9 @@ class HitzApp(object):
 		awayteam=json.loads(kwargs['away'])
 		winner = kwargs['winner']
 		datePlayed=kwargs['date']
-		completeGame(session=cherrypy.request.db, homeTeam=hometeam, awayTeam=awayteam, winner=winner, datePlayed=datetime.datetime.strptime(datePlayed, '"%Y-%m-%d"'))
+		homepoints=kwargs['homepoints']
+		awaypoints=kwargs['awaypoints']
+		completeGame(session=cherrypy.request.db, homeTeam=hometeam, awayTeam=awayteam, winner=winner, datePlayed=datetime.datetime.strptime(datePlayed, '"%Y-%m-%d"'), homepoints=homepoints, awaypoints=awaypoints)
 		print "%s vs %s %s won" %(awayteam, hometeam, winner)
 	@cherrypy.expose
 	def drawprobability(self, **kwargs):
@@ -428,7 +437,8 @@ class HitzApp(object):
 					session=cherrypy.request.db, 
 					homeNames=hometeam, 
 					awayNames=awayteam
-					))/100.0
+					))/100.0,
+				'winProbability':float(getWinProb(get_or_create_team(session=cherrypy.request.db, findplayers=awayteam).hitters,get_or_create_team(session=cherrypy.request.db, findplayers=hometeam).hitters))/100.0
 				}
 			pub.sendMessage('currentgamedrawprobability', 
 				
