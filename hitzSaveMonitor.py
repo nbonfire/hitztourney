@@ -22,20 +22,47 @@ FILENAME = 'hitzsave'
 DIRNAME = 'saves'
 players = hitzSaveRead(FILENAME)
 
+def didPlay(newrecord,oldrecord):
+	
+	# Get the dictionary of the value differences from the old record to the new record
+	stats = { key: value-oldrecord[key] for (key, value) in newrecord.iteritems() if key !='name'}
+	stats['name']=oldrecord['name']
+	
+
+	return stats
+	
+
 class SaveChangeEventHandler(FileSystemEventHandler):
 
 	def on_modified(self, event):
 		global FILENAME
 		global players
+		updatedplayers = []
 		newplayers = hitzSaveRead(FILENAME)
 		#
-		# compare newplayers to players
+		# compare new records to old records
 		#
-		pairs = zip(newplayers,players)
-		differences = [(x,y) for x,y in pairs if x!= y]
+
+		for player in newplayers:
+			oldplayer = next((item for item in players if item['name'] ==player['name']),{'name':player['name'],'hits':0,'shots':0,'wins':0,'assists':0, 'gamesPlayed':0, 'goals':0,'consecutiveLosses':0})
+			
+			difference = didplay(player,oldplayer)
+			if difference['gamesPlayed']>0:
+				
+				updatedplayers.append(difference)
+
+		updatedplayers.sort(key=lambda player: player['gamesPlayed'])
+		playedgame = [{'name':item['name'],'wins':item['wins']} for item in updatedplayers]
+		if len(updatedplayers)!=6:
+			print '\nERROR: number of updated players is not 6.\n\n ' +playedgame
+		else:
+			print playedgame[0:3] + ' defeated ' + playedgame[3:6]
 		#
 		# update db/write to screen 
 		#
+
+
+
 
 		players = newplayers
 
