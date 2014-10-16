@@ -17,10 +17,11 @@ import logging
 from watchdog.observers import Observer
 from watchdog.events import  FileSystemEventHandler
 from hitzSaveRead import hitzSaveRead
+import os
 
 FILENAME = 'hitzsave'
 DIRNAME = 'saves'
-players = hitzSaveRead(FILENAME)
+players = hitzSaveRead(os.join(DIRNAME,FILENAME))
 
 def didPlay(newrecord,oldrecord):
 	
@@ -38,7 +39,7 @@ class SaveChangeEventHandler(FileSystemEventHandler):
 		global FILENAME
 		global players
 		updatedplayers = []
-		newplayers = hitzSaveRead(FILENAME)
+		newplayers = hitzSaveRead(os.join(DIRNAME,FILENAME))
 		#
 		# compare new records to old records
 		#
@@ -54,7 +55,7 @@ class SaveChangeEventHandler(FileSystemEventHandler):
 		updatedplayers.sort(key=lambda player: player['gamesPlayed'])
 		playedgame = [{'name':item['name'],'wins':item['wins']} for item in updatedplayers]
 		if len(updatedplayers)!=6:
-			print '\nERROR: number of updated players is not 6.\n\n ' +playedgame
+			print '\n*********\nERROR: number of updated players is not 6.\n\n ' +playedgame+'*********'
 		else:
 			print playedgame[0:3] + ' defeated ' + playedgame[3:6]
 		#
