@@ -6,8 +6,17 @@
  
 import binascii
 import pprint
+import os
  
+#FILENAME = 'SLUS_201.40_0.bin'
+#PATH = '/media/b432a63a-9163-4aa8-938f-d55faaf624f2/playstation2/VMC/'
+
 FILENAME = 'hitzsave'
+PATH = 'C:\saves'
+
+#if you have a save file directly, the offset is 8. if you have a OPL memory card image, the offset is 46080 + the 8 of the file
+OFFSET = 8
+#OFFSET = 46088
  
 # Converts the hex string to an integer value
 
@@ -20,7 +29,7 @@ def hitzSaveRead(filename):
         fp.close()
      
     #strip header
-    contents=contents[8:]
+    contents=contents[OFFSET:]
      
     players={}
      
@@ -59,10 +68,12 @@ def hitzSaveRead(filename):
                 'hits':hits,
                 'wins':wins,
                 'assists':assists,
-                'consecutiveLosses':consecutivelosses
+                'consecutiveLosses':consecutivelosses,
+                'goals':goals
                 }
         players[name]=player
+    return players
 
 if __name__ == '__main__':
-    players = readsave(FILENAME) 
+    players = hitzSaveRead(os.path.join(PATH,FILENAME)) 
     pprint.pprint(players)
