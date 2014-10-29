@@ -67,7 +67,8 @@ class SaveChangeEventHandler(FileSystemEventHandler):
 		winteam={'players':[],'score':0}
 		loseteam={'players':[],'score':0}
 		#pprint.pprint(players)
-		print "*** NEW GAME ***"
+		print "*** NEW GAME, waiting 30 seconds ***"
+		time.sleep(30)
 		newplayers = hitzSaveRead(os.path.join(DIRNAME,FILENAME))
 		#
 		# compare new records to old records
