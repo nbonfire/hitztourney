@@ -27,14 +27,14 @@ DIRNAME = 'C:\saves'
 
 players = hitzSaveRead(os.path.join(DIRNAME,FILENAME))
 
-def didPlay(newrecord,oldrecord):
+'''def didPlay(newrecord,oldrecord):
 	
 	# Get the dictionary of the value differences from the old record to the new record
 	stats = { key: value-oldrecord[key] for (key, value) in newrecord.iteritems() if key !='name'}
 	stats['name']=oldrecord['name']
 	
 
-	return stats
+	return stats'''
 
 class DictDiffer(object):
 	"""
