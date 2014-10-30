@@ -112,25 +112,7 @@ class SaveChangeEventHandler(FileSystemEventHandler):
 				print str(winteam['players'])+' beat '+str(loseteam['players'])+' : '+str(winteam['score'])+' - '+str(loseteam['score'])
 
 
-		
-		'''for player in newplayers:
-			oldplayer = next((item for item in players if item['name'] ==player['name']),{'name':player['name'],'hits':0,'shots':0,'wins':0,'assists':0, 'gamesPlayed':0, 'goals':0,'consecutiveLosses':0})
-			
-			difference = didplay(player,oldplayer)
-			if difference['gamesPlayed']>0:
-				
-				updatedplayers.append(difference)
 
-		updatedplayers.sort(key=lambda player: player['gamesPlayed'])
-		playedgame = [{'name':item['name'],'wins':item['wins']} for item in updatedplayers]
-		if len(updatedplayers)!=6:
-			print '\n*********\nERROR: number of updated players is not 6.\n\n ' +playedgame+'*********'
-		else:
-			print playedgame[0:3] + ' defeated ' + playedgame[3:6]
-		#
-		# update db/write to screen 
-		#
-		'''
 
 
 
