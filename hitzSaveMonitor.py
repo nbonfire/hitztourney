@@ -62,44 +62,54 @@ class SaveChangeEventHandler(FileSystemEventHandler):
 	def on_modified(self, event):
 		global FILENAME
 		global players
-		playednames = set()
-		updatedplayers=[]
-		winteam={'players':[],'score':0}
-		loseteam={'players':[],'score':0}
-		#pprint.pprint(players)
-		print "*** NEW GAME, waiting 30 seconds ***"
-		time.sleep(30)
-		newplayers = hitzSaveRead(os.path.join(DIRNAME,FILENAME))
-		#
-		# compare new records to old records
-		#
-		#pprint.pprint(newplayers)
-		d=DictDiffer(newplayers, players)
-		if len(d.added())>0:
-			print "New players: " + ' '.join(i for i in d.added())
-		playednames = d.added().union(d.changed())
-		if len(playednames)!= 6:
-			print "somethings fucky, there weren't 6 players"
-		else:
+		readytoread=1
+		
+		#test if the file is done being written to, if its not we should get an exception
+		try:
+			with open(os.path.join(DIRNAME,FILENAME),'wb') as fp:
+				fp.close
+		except:
+			readytoread=0
 			
-			for player in playednames:
-				oldrecord = players[player]
-				newrecord = newplayers[player]
-				currentgamestatschanged = DictDiffer(newrecord, oldrecord).changed()
-				playeroutput={'name':player,'assists':0, 'goals':0, 'hits':0, 'shots':0,
-				'gamesPlayed':0,'consecutiveLosses':0,'wins':0}
-				for key in currentgamestatschanged:
-					playeroutput[key]+=newrecord[key]-oldrecord[key]
-				pprint.pprint(playeroutput)
+		if readytoread:
+			playednames = set()
+			updatedplayers=[]
+			winteam={'players':[],'score':0}
+			loseteam={'players':[],'score':0}
+			#pprint.pprint(players)
+			print "*** NEW GAME ***"
+		
+			newplayers = hitzSaveRead(os.path.join(DIRNAME,FILENAME))
+			#
+			# compare new records to old records
+			#
+			#pprint.pprint(newplayers)
+			d=DictDiffer(newplayers, players)
+			if len(d.added())>0:
+				print "New players: " + ' '.join(i for i in d.added())
+			playednames = d.added().union(d.changed())
+			if len(playednames)!= 6:
+				print "somethings fucky, there weren't 6 players"
+			else:
+			
+				for player in playednames:
+					oldrecord = players[player]
+					newrecord = newplayers[player]
+					currentgamestatschanged = DictDiffer(newrecord, oldrecord).changed()
+					playeroutput={'name':player,'assists':0, 'goals':0, 'hits':0, 'shots':0,
+					'gamesPlayed':0,'consecutiveLosses':0,'wins':0}
+					for key in currentgamestatschanged:
+						playeroutput[key]+=newrecord[key]-oldrecord[key]
+					pprint.pprint(playeroutput)
 
 
-				if newrecord['wins']>oldrecord['wins']:
-					winteam['players'].append(player)
-					winteam['score']+=(newrecord['goals']-oldrecord['goals'])
-				else:
-					loseteam['players'].append(player)
-					loseteam['score']+=(newrecord['goals']-oldrecord['goals'])
-			print str(winteam['players'])+' beat '+str(loseteam['players'])+' : '+str(winteam['score'])+' - '+str(loseteam['score'])
+					if newrecord['wins']>oldrecord['wins']:
+						winteam['players'].append(player)
+						winteam['score']+=(newrecord['goals']-oldrecord['goals'])
+					else:
+						loseteam['players'].append(player)
+						loseteam['score']+=(newrecord['goals']-oldrecord['goals'])
+				print str(winteam['players'])+' beat '+str(loseteam['players'])+' : '+str(winteam['score'])+' - '+str(loseteam['score'])
 
 
 		
@@ -124,7 +134,7 @@ class SaveChangeEventHandler(FileSystemEventHandler):
 
 
 
-		players = newplayers
+			players = newplayers
 
 
 if __name__ == '__main__':
