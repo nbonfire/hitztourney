@@ -19,7 +19,8 @@ from watchdog.events import  FileSystemEventHandler
 from hitzSaveRead import hitzSaveRead
 import os, pprint
 
-FILENAME = 'SLUS_201.40_0.bin'
+#FILENAME = 'SLUS_201.40_0.bin'
+FILENAME = 'hitzsave'
 DIRNAME = '/media/b432a63a-9163-4aa8-938f-d55faaf624f2/playstation2/VMC/'
 
 #FILENAME = 'hitzsave'
