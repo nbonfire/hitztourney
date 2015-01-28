@@ -21,7 +21,7 @@ import os, pprint
 
 #FILENAME = 'SLUS_201.40_0.bin'
 FILENAME = 'hitzsave'
-DIRNAME = '/media/b432a63a-9163-4aa8-938f-d55faaf624f2/playstation2/VMC/'
+DIRNAME = '/media/pool/playstation2/VMC/'
 
 #FILENAME = 'hitzsave'
 #DIRNAME = 'C:\saves'
