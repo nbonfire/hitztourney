@@ -26,7 +26,7 @@ DIRNAME = '/media/pool/playstation2/VMC/'
 #FILENAME = 'hitzsave'
 #DIRNAME = 'C:\saves'
 
-SECONDS_TO_WAIT_FOR_FILE_COMPLETE=20
+SECONDS_TO_WAIT_FOR_FILE_COMPLETE=30
 
 players = hitzSaveRead(os.path.join(DIRNAME,FILENAME))
 #print players
