@@ -9,7 +9,7 @@ import pprint
 import os
 
 FILENAME = 'SLUS_201.40_0.bin'
-PATH = '/media/b432a63a-9163-4aa8-938f-d55faaf624f2/playstation2/VMC/'
+PATH = '/media/pool/playstation2/VMC/'
 
 #FILENAME = 'hitzsave'
 #PATH = 'C:\saves'
