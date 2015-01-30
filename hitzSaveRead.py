@@ -23,13 +23,13 @@ OFFSET = 46088
 def convert(hexString):  
     return int(binascii.hexlify(hexString),16)
 
-def hitzSaveRead(filename): 
+def hitzSaveRead(filename, offset = OFFSET): 
     with open(filename,'rb') as fp:
         contents=fp.read()
         fp.close()
 
     #strip header
-    contents=contents[OFFSET:]
+    contents=contents[offset:]
 
     players={}
 
