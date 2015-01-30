@@ -117,6 +117,8 @@ class SaveChangeEventHandler(FileSystemEventHandler):
                         playednames = set(d.added().union(d.changed()))
                         if (len(d.added())+len(d.changed()))!= 6:
                             print "*** somethings fucky, there weren't 6 players"
+                            pprint.pprint(playednames)
+                            
 
                         elif deleteName !=1:
                             print "***NEW GAME***"
