@@ -22,13 +22,15 @@ import os, pprint
 #FILENAME = 'SLUS_201.40_0.bin'
 FILENAME = 'hitzsave'
 DIRNAME = '/media/pool/playstation2/VMC/'
+OFFSET=46088
+# OFFSET = 8 # for a save file directly use 8, for a VMC file use 46088
 
 #FILENAME = 'hitzsave'
 #DIRNAME = 'C:\saves'
 
 SECONDS_TO_WAIT_FOR_FILE_COMPLETE=30
 
-players = hitzSaveRead(os.path.join(DIRNAME,FILENAME))
+players = hitzSaveRead(os.path.join(DIRNAME,FILENAME), OFFSET)
 #print players
 
 '''def didPlay(newrecord,oldrecord):
