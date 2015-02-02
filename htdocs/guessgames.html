@@ -191,7 +191,7 @@ Required:
           % if player['isChecked']:
             checked
           % endif
-         class="hitters"> <a href="playerstats/${player['name']}">${player['name']} - <span value="${player['name']}" class="playerrank">${player['playerrank']}</span> (Lifetime: <span value="${player['name']}" class="overallplayerrank">${player['overallplayerrank']}</span>)</a>
+         class="hitters"> <a href="playerstats/${player['name']}">${player['name']} (<span value="${player['name']}" class="overallplayerrank">${player['overallplayerrank']}</span>)</a>
     		</label>
     		% endfor
     		<div class="form-actions">
