@@ -330,7 +330,7 @@ def generateGamePossibilities(session, listOfPlayers=[], numberOfGames=10, usesW
 	
 	potentialGames=[]
 	potentialGamesCollection=SortedCollection(key=lambda item:-item['strength'])
-	layers = set(listOfPlayers)
+	players = set(listOfPlayers)
 	complete = set()
 	begintime=datetime.datetime.now()
 	lastupdate=begintime #when was the last time we printed the results?
