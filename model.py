@@ -417,10 +417,11 @@ def newSeasonRatingRecalculation(session, newDate=datetime.datetime.today()):
 			print "Something went wrong. Winners %s Home team %s Away Team %s" % (winners, homers, awayers)
 	session.commit()
 
-def getPlayersForTemplate(session, checkedPlayers=['Nick', 'Rosen', 'Magoo', 'White Rob', 'Ziplox', 'Ced']):
+def getPlayersForTemplate(session, checkedPlayers=[]):
 	players = session.query(Hitter).all()
 	names = []
-
+	if not checkedPlayers:
+		checkedPlayers = [ player.name for player in players[0-5] ]
 	for player in players:
 		if player.name in checkedPlayers:
 			isChecked=True
