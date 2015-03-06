@@ -318,13 +318,14 @@ def getDefaultGamesList(session):
 	else:
 		return defaultGamesList
 
-def generateGamePossibilities(session, listOfPlayers=['Nick', 'Rosen', 'Magoo', 'White Rob', 'Ziplox', 'Ced'], numberOfGames=10, usesWebsocket = True):
+def generateGamePossibilities(session, listOfPlayers=[], numberOfGames=10, usesWebsocket = True):
 	# 
 	# output should be a list of games [{'home':team,'away':team, 'strength':float}] randomized, then sorted by strength
 	#
 	global defaultGamesList
 	if len(listOfPlayers)<6:
-		print "error: %s doesn't have enough players" % listOfPlayers
+		if listOfPlayers:
+			print "error: %s doesn't have enough players" % listOfPlayers
 		return generateGamePossibilities(numberOfGames=numberOfGames, usesWebsocket=usesWebsocket)
 	else:
 		potentialGames=[]
@@ -408,7 +409,7 @@ class HitzApp(object):
 		playernames=json.loads(kwargs['players'])
 		print playernames
 		if len(playernames['data'])<6:
-			players=["Magoo","Rosen","White Rob","Ziplox","Drew","Crabman"]
+			players=[]
 		else:
 			players=playernames['data']
 		pub.sendMessage('checkedPlayers', message=players)
