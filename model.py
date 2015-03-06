@@ -421,7 +421,8 @@ def getPlayersForTemplate(session, checkedPlayers=[]):
 	players = session.query(Hitter).all()
 	names = []
 	if not checkedPlayers:
-		checkedPlayers = [ player.name for player in players[0-5] ]
+		checkedPlayers = [ player.name for player in players ]
+		checkedPlayers = checkedPlayers[0:6]
 	for player in players:
 		if player.name in checkedPlayers:
 			isChecked=True
