@@ -326,50 +326,49 @@ def generateGamePossibilities(session, listOfPlayers=[], numberOfGames=10, usesW
 	if len(listOfPlayers)<6:
 		if listOfPlayers:
 			print "error: %s doesn't have enough players" % listOfPlayers
-		return generateGamePossibilities(numberOfGames=numberOfGames, usesWebsocket=usesWebsocket)
-	else:
-		potentialGames=[]
-		potentialGamesCollection=SortedCollection(key=lambda item:-item['strength'])
-		players = set(listOfPlayers)
-		complete = set()
-		begintime=datetime.datetime.now()
-		lastupdate=begintime #when was the last time we printed the results?
-		firstcombo=itertools.combinations(players, 3)
-		
-		iterations=(len(players))*(len(players)-1)*(len(players)-2)/6
-		iterator=0
-		for home in firstcombo:
-			iterator=iterator+1
-			complete.add(home[0])
-			remaining_players = players - set(home) - complete
-			for away in itertools.combinations(remaining_players, 3):
-				
-				potentialGamesCollection.insert({'home':[home[0], home[1], home[2]],'homerating':get_or_create_team(session, [home[0],home[1],home[2]]).getteamrating(), 'away':[away[0], away[1], away[2]], 'awayrating':get_or_create_team(session, [away[0],away[1],away[2]]).getteamrating(), 'strength':(float(getStrength(session, homeNames=home,awayNames=away))/100), 'lastPlayed':str(getLastPlayed(session, homeNames=home,awayNames=away))})
-				#potentialGamesCollection.insert({'home':["%s", "%s", "%s"] % (home[0],home[1],home[2]),'homerating':get_or_create_team(session, [home[0],home[1],home[2]]).getteamrating(), 'away':'["%s", "%s", "%s"]' % (away[0],away[1],away[2]), 'awayrating':get_or_create_team(session, [away[0],away[1],away[2]]).getteamrating(), 'strength':(float(getStrength(session, homeNames=home,awayNames=away))/100), 'lastPlayed':str(getLastPlayed(session, homeNames=home,awayNames=away))})
-				
-				#potentialGames.append( {'home':home, 'away':away, 'strength':getStrength(homeNames=home,awayNames=away), 'lastPlayed':getLastPlayed(homeNames=home,awayNames=away)})
-				if len(potentialGamesCollection)>numberOfGames:
-					potentialGamesCollection.removebyindex(numberOfGames)
+		listOfPlayers=[player.name for player in session.query(Hitter).all()][0:6]
+	
+	potentialGames=[]
+	potentialGamesCollection=SortedCollection(key=lambda item:-item['strength'])
+	layers = set(listOfPlayers)
+	complete = set()
+	begintime=datetime.datetime.now()
+	lastupdate=begintime #when was the last time we printed the results?
+	firstcombo=itertools.combinations(players, 3)
+	
+	iterations=(len(players))*(len(players)-1)*(len(players)-2)/6
+	iterator=0
+	for home in firstcombo:
+		iterator=iterator+1
+		complete.add(home[0])
+		remaining_players = players - set(home) - complete
+		for away in itertools.combinations(remaining_players, 3):
+			potentialGamesCollection.insert({'home':[home[0], home[1], home[2]],'homerating':get_or_create_team(session, [home[0],home[1],home[2]]).getteamrating(), 'away':[away[0], away[1], away[2]], 'awayrating':get_or_create_team(session, [away[0],away[1],away[2]]).getteamrating(), 'strength':(float(getStrength(session, homeNames=home,awayNames=away))/100), 'lastPlayed':str(getLastPlayed(session, homeNames=home,awayNames=away))})
+			#potentialGamesCollection.insert({'home':["%s", "%s", "%s"] % (home[0],home[1],home[2]),'homerating':get_or_create_team(session, [home[0],home[1],home[2]]).getteamrating(), 'away':'["%s", "%s", "%s"]' % (away[0],away[1],away[2]), 'awayrating':get_or_create_team(session, [away[0],away[1],away[2]]).getteamrating(), 'strength':(float(getStrength(session, homeNames=home,awayNames=away))/100), 'lastPlayed':str(getLastPlayed(session, homeNames=home,awayNames=away))})
+			
+			#potentialGames.append( {'home':home, 'away':away, 'strength':getStrength(homeNames=home,awayNames=away), 'lastPlayed':getLastPlayed(homeNames=home,awayNames=away)})
+			if len(potentialGamesCollection)>numberOfGames:
+				potentialGamesCollection.removebyindex(numberOfGames)
 				
 			
-				if usesWebsocket==True:
-					timenow=datetime.datetime.now()
-					difference=timenow-lastupdate
-					if difference.total_seconds()>1:
-						#cls()
-						#print list(potentialGamesCollection)
-						lastupdate=timenow
-						#sendToAll(event='top10games', data={'games':list(potentialGamesCollection), 'isdone':"Working...", 'percentComplete':str(iterator*100/iterations)})
-						pub.sendMessage('topgames', event="topgames", message=({'games':list(potentialGamesCollection), 'isdone':"Working...", 'percentComplete':str(iterator*100/iterations)} ))
-		#print "\n\n\n outer iterations: %d - inner iterations: %d - guesstimate: %d"%(iterator, iterations)
-		if usesWebsocket == True:
-			defaultGamesList = list(potentialGamesCollection)
-			#sendToAll(event='top10games', data={'games':list(potentialGamesCollection), 'isdone':"Done", 'percentComplete':'100'})
-			pub.sendMessage('topgames', event="topgames", message=({'games':list(potentialGamesCollection), 'isdone':"Done", 'percentComplete':'100'}))
-			print 'Elapsed Time: %s seconds' % str((lastupdate-timenow).total_seconds)
-			return True
-		else:
-			return potentialGamesCollection
+			if usesWebsocket==True:
+				timenow=datetime.datetime.now()
+				difference=timenow-lastupdate
+				if difference.total_seconds()>1:
+					#cls()
+					#print list(potentialGamesCollection)
+					lastupdate=timenow
+					#sendToAll(event='top10games', data={'games':list(potentialGamesCollection), 'isdone':"Working...", 'percentComplete':str(iterator*100/iterations)})
+					pub.sendMessage('topgames', event="topgames", message=({'games':list(potentialGamesCollection), 'isdone':"Working...", 'percentComplete':str(iterator*100/iterations)} ))
+	#print "\n\n\n outer iterations: %d - inner iterations: %d - guesstimate: %d"%(iterator, iterations)
+	if usesWebsocket == True:
+		defaultGamesList = list(potentialGamesCollection)
+		#sendToAll(event='top10games', data={'games':list(potentialGamesCollection), 'isdone':"Done", 'percentComplete':'100'})
+		pub.sendMessage('topgames', event="topgames", message=({'games':list(potentialGamesCollection), 'isdone':"Done", 'percentComplete':'100'}))
+		print 'Elapsed Time: %s seconds' % str((lastupdate-timenow).total_seconds)
+		return True
+	else:
+		return potentialGamesCollection
 
 class HitzApp(object):
 	@cherrypy.expose
