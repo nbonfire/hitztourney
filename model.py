@@ -202,8 +202,8 @@ class Game(Base):
 		self.awayteam = awayteam
 		self.teams = [hometeam,awayteam]
 		self.winner = winner
-		self.awaypoints = awaypoints
-		self.homepoints = homepoints
+		self.awaypoints = guaranteeInt(awaypoints)
+		self.homepoints = guaranteeInt(homepoints)
 	def winposition(self):
 		if self.winner_id == self.hometeam_id:
 			return "home"
@@ -627,7 +627,12 @@ def rivals(session, hitterobject):
 	return listofrivals[:5]
 
 
-
+def guaranteeInt(a):
+	try:
+		int(a)
+		return a
+	except ValueError:
+		return 0
 
 
 def standaloneSetup():
