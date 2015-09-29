@@ -7,6 +7,8 @@
 import binascii
 import pprint
 import os
+import csv
+import datetime
 
 FILENAME = 'SLUS_201.40_0.bin'
 PATH = '/media/pool/playstation2/VMC/'
@@ -77,3 +79,12 @@ def hitzSaveRead(filename, offset = OFFSET):
 if __name__ == '__main__':
     players = hitzSaveRead(os.path.join(PATH,FILENAME)) 
     pprint.pprint(players)
+    # CSV output
+    # list of keys for first row of CSV
+    headings = ['name','gamesPlayed','shots','hits','wins','assists','consecutiveLosses','goals']
+    # use list of keys to make sure CSV is in the same order
+    with csv.writer(open('output.csv','wb+')) as fp:
+        fp.writerow(headings)
+        for player in players:
+            fp.writerow([player[heading] for heading in headings].append(datetime.datetime.today()))
+    
