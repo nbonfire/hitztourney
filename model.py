@@ -295,9 +295,18 @@ def getWinProb(rA, rB):
 	# rA and rB are lists of hitters list(Team.hitters)
 	# Using formula from https://github.com/sublee/trueskill/issues/1
 	# Assumes that skill is additive
-	deltaMu = sum( [x.rating.mu for x in list(rA)])/3.0 - sum( [x.rating.mu for x in list(rB)])/3.0
+	"""deltaMu = sum( [x.rating.mu for x in list(rA)])/3.0 - sum( [x.rating.mu for x in list(rB)])/3.0
 	rsss = math.sqrt(sum([x.rating.sigma**2 for x in list(rA)])/3.0 + sum([x.rating.sigma**2 for x in list(rB)])/3.0)
-	return int(trueskill.backends.cdf(deltaMu/rsss)*10000)
+	return int(trueskill.backends.cdf(deltaMu/rsss)*10000)"""
+	#
+	#
+	# New Algo that seems to work well                                                      
+    	deltaMu = sum([x.rating.mu for x in rA]) - sum([x.rating.mu for x in rB])                   
+    	sumSigma = sum([x.rating.sigma ** 2 for x in rA]) + sum([x.rating.sigma ** 2 for x in rB])  
+    	playerCount = len(rA) + len(rB)                                               
+    	denominator = math.sqrt(playerCount * (trueskill.BETA * trueskill.BETA) + sumSigma)             
+    	return int(trueskill.backends.cdf(deltaMu / denominator)*10000)  
+	
 
 def jsonbackup(session):
 	results = []
