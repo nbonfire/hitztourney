@@ -112,7 +112,8 @@ if __name__ == '__main__':
     # list of keys for first row of CSV
     headings = ['name','games_played','shots','goals','assists','consecutive_wins','consecutive_losses','one-timer_goals','one-timer_shots','unknown01','passes','unknown02','hits','wins','unknown03','fights_won']
     # use list of keys to make sure CSV is in the same order
-    with csv.writer(open('output.csv','wb+')) as fp:
-        fp.writerow(headings)
+    with open('output.csv','wb+') as fp:
+        csvwriter=csv.writer(fp)
+        csvwriter.writerow(headings)
         for player in players:
-            fp.writerow([player[heading] for heading in headings].append(datetime.datetime.today()))
+            csvwriter.writerow([player[heading] for heading in headings].append(datetime.datetime.today()))
