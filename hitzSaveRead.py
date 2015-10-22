@@ -49,26 +49,26 @@ def hitzSaveRead(filename, offset = OFFSET):
     winsPosition=34
     unknown03Position=36
     fightswonPosition=38
-
+    p = lambda x,y: x[startpos+y+1:startpos+y-1:-1] # get 2 bytes of data in reverse endianness
     for i in range(20): # there's a max of 20 users stored in a save
 
         startpos = i * 304
         name=contents[startpos:startpos+5].rstrip('\x00')
-        gamesplayedhex=contents[startpos+gamesplayedPosition]
-        shotshex=contents[startpos+shotsPosition+1:startpos+shotsPosition-1:-1]       # reversed to fix endianness
-        goalshex = contents[startpos+goalsPosition+1:startpos+goalsPosition-1:-1]     # There's probably a better way to do this...
-        assistshex = contents[startpos+assistsPosition]
-        consecutivewinshex = contents[startpos+consecutivewinsPosition]
-        consecutivelosseshex = contents[startpos+consecutivelossesPosition]
-        onetimergoalshex = contents[startpos+onetimergoalsPosition]
-        onetimershotshex = contents[startpos+onetimershotsPosition]
-        unknown01hex = contents[startpos+unknown01Position]
-        passeshex = contents[startpos+passesPosition]
-        unknown02hex = contents[startpos+unknown02Position+1:startpos+unknown02Position-1:-1]
-        hitshex = contents[startpos + hitsPosition + 1:startpos + hitsPosition-1:-1]
-        winshex = contents[startpos + winsPosition]
-        unknown03hex = contents[startpos+unknown03Position]
-        fightswonhex = contents[startpos+fightswonPosition]
+        gamesplayedhex=p(contents,gamesplayedPosition)
+        shotshex=p(contents,shotsPosition) 
+        goalshex = p(contents,goalsPosition)
+        assistshex = p(contents,assistsPosition)
+        consecutivewinshex = p(contents,consecutivewinsPosition)
+        consecutivelosseshex = p(contents,consecutivelossesPosition)
+        onetimergoalshex = p(contents,onetimergoalsPosition)
+        onetimershotshex = p(contents,onetimershotsPosition)
+        unknown01hex = p(contents,unknown01Position)
+        passeshex = p(contents,passesPosition)
+        unknown02hex = p(contents,unknown02Position)
+        hitshex = p(contents,hitsPosition)
+        winshex = p(contents,winsPosition)
+        unknown03hex = p(contents,unknown03Position)
+        fightswonhex = p(contents,fightswonPosition)
 
         gamesplayed = convert(gamesplayedhex)
         shots = convert(shotshex)
