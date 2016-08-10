@@ -8,8 +8,8 @@ OFFSET = 8
 
 
 FILENAME = 'BASLUS-20140NHLHitz'
-PATH = '/Users/nickbonfatti/Downloads'
-OUTPUTFILENAME = '/Users/nickbonfatti/Desktop/output.csv'
+PATH = '/media/pool/games/PlayStation 2/Saves/NHL Hitz 20-02/'
+OUTPUTFILENAME = '/media/pool/games/PlayStation 2/Saves/NHL Hitz 20-02/output.csv'
 
 
 
@@ -34,8 +34,6 @@ def hitzSaveRead(filename, offset = OFFSET):
     shotsPosition=12
     goalsPosition=14
     assistsPosition=16
-    consecutivewinsPosition=18
-    consecutivelossesPosition=20
     onetimergoalsPosition=22
     onetimershotsPosition=24
     unknown01Position=26
@@ -54,8 +52,6 @@ def hitzSaveRead(filename, offset = OFFSET):
         shotshex=p(startpos,shotsPosition) 
         goalshex = p(startpos,goalsPosition)
         assistshex = p(startpos,assistsPosition)
-        consecutivewinshex = p(startpos,consecutivewinsPosition)
-        consecutivelosseshex = p(startpos,consecutivelossesPosition)
         onetimergoalshex = p(startpos,onetimergoalsPosition)
         onetimershotshex = p(startpos,onetimershotsPosition)
         unknown01hex = p(startpos,unknown01Position)
@@ -70,8 +66,6 @@ def hitzSaveRead(filename, offset = OFFSET):
         shots = convert(shotshex)
         goals = convert(goalshex)
         assists = convert(assistshex)
-        consecutivewins = convert(consecutivewinshex)
-        consecutivelosses = convert(consecutivelosseshex)
         onetimergoals = convert(onetimergoalshex)
         onetimershots = convert(onetimershotshex)
         unknown01 = convert(unknown01hex)
@@ -91,8 +85,6 @@ def hitzSaveRead(filename, offset = OFFSET):
                 'shots':shots,
                 'goals':goals,
                 'assists':assists,
-                'consecutive_wins':consecutivewins,
-                'consecutive_losses':consecutivelosses,
                 'one-timer_goals':onetimergoals,
                 'one-timer_shots':onetimershots,
                 'unknown01':unknown01,
@@ -122,8 +114,6 @@ headings = ['id',
                 'shots',
                 'goals',
                 'assists',
-                'consecutive_wins',
-                'consecutive_losses',
                 'one-timer_goals',
                 'one-timer_shots',
                 'unknown01',
