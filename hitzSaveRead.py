@@ -1,4 +1,4 @@
-scii
+import binascii
 import pprint
 import os
 import csv
