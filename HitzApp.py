@@ -501,5 +501,5 @@ if __name__ == '__main__':
 		}
 
 	cherrypy.server.socket_host='0.0.0.0'
-	cherrypy.server.socket_port=80
+	cherrypy.server.socket_port=4011
 	cherrypy.quickstart(HitzApp(), config=configtest)
