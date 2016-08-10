@@ -1,21 +1,17 @@
-#
-# hitzSaveRead.py
-#
-# extract data from a PS2 NHL Hitz 20-02 save file (unknown if it works for xbox or GC saves)
-#
-
-import binascii
+scii
 import pprint
 import os
 import csv
 import datetime
 
-FILENAME = 'BASLUS-20140NHLHitz'
-PATH = '/media/pool/games/PlayStation 2/saves/NHL Hitz 20-02/'
-
-#if you have a save file directly, the offset is 8. if you have a OPL memory card image, the offset is 46080 + the 8 of the file
 OFFSET = 8
-#OFFSET = 46088
+
+
+FILENAME = 'BASLUS-20140NHLHitz'
+PATH = '/Users/nickbonfatti/Downloads'
+OUTPUTFILENAME = '/Users/nickbonfatti/Desktop/output.csv'
+
+
 
 # Converts the hex string to an integer value
 
@@ -85,7 +81,12 @@ def hitzSaveRead(filename, offset = OFFSET):
         wins = convert(winshex)
         unknown03 = convert(unknown03hex)
         fightswon = convert(fightswonhex)
-        player={'name':name,
+        player={
+                'id':'',
+                'date':datetime.datetime.today(),
+                'istournament':0,
+                'playerid':'',
+                'name':name,
                 'games_played':gamesplayed,
                 'shots':shots,
                 'goals':goals,
@@ -102,18 +103,41 @@ def hitzSaveRead(filename, offset = OFFSET):
                 'unknown03':unknown03,
                 'fights_won':fightswon
                 }
-        players[name]=player
+        if name:
+            players[name]=player
     return players
 
-if __name__ == '__main__':
-    players = hitzSaveRead(os.path.join(PATH,FILENAME)) 
-    pprint.pprint(players)
-    # CSV output
-    # list of keys for first row of CSV
-    headings = ['name','games_played','shots','goals','assists','consecutive_wins','consecutive_losses','one-timer_goals','one-timer_shots','unknown01','passes','unknown02','hits','wins','unknown03','fights_won']
-    # use list of keys to make sure CSV is in the same order
-    with open('output.csv','wb+') as fp:
-        csvwriter=csv.writer(fp)
-        csvwriter.writerow(headings)
-        for player in players:
-            csvwriter.writerow([player[heading] for heading in headings].append(datetime.datetime.today()))
+
+players = hitzSaveRead(os.path.join(PATH,FILENAME)) 
+pprint.pprint(players)
+
+# CSV output
+# list of keys for first row of CSV
+headings = ['id',
+                'date',
+                'istournament',
+                'playerid',
+                'name',
+                'games_played',
+                'shots',
+                'goals',
+                'assists',
+                'consecutive_wins',
+                'consecutive_losses',
+                'one-timer_goals',
+                'one-timer_shots',
+                'unknown01',
+                'passes',
+                'unknown02',
+                'hits',
+                'wins',
+                'unknown03',
+                'fights_won']# use list of keys to make sure CSV is in the same order
+with open(OUTPUTFILENAME,'wb+') as fp:
+    csvwriter=csv.writer(fp)
+    csvwriter.writerow(headings)
+    #pprint.pprint(players)
+    for player in players.keys():
+        #pprint.pprint(player)
+        #playerdata=[players[player][heading] for heading in headings];pprint.pprint(playerdata)
+        csvwriter.writerow([players[player][heading] for heading in headings])
