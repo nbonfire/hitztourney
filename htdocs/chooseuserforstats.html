@@ -49,7 +49,7 @@
         <p class="text-right"><center><table class="table"><tbody>
             % for player in players:
 
-  <tr><td>${loop.index+1}</td><td><a href="/playerstats/${player['name']}">${player['name']}</a><td>${player['skill']}</td><td>(Lifetime:${player['overallskill']})</td><td>Record: ${player['record']}</td></tr>
+  <tr><td>${loop.index+1}</td><td><a href="/playerstats/${player['name']}">${player['name']}</a><td>${player['skill']}</td><td>Lifetime:${player['overallskill']}</td><td>${player['record']}</td></tr>
 
   % endfor
           </table></p>
