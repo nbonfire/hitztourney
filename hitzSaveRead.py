@@ -77,7 +77,7 @@ def hitzSaveRead(filename, offset = OFFSET):
         fightswon = convert(fightswonhex)
         player={
                 'id':'',
-                'date':datetime.datetime.today(),
+                'date':datetime.date.today(),
                 'istournament':0,
                 'playerid':'',
                 'name':name,
