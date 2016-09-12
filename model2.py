@@ -11,7 +11,7 @@ overallenv=TrueSkill()
 teamenv=TrueSkill() #current season
 overallteamenv=TrueSkill()
 
-currentseasonstartdate=datetime.datetime(2013,9,14)
+currentseasonstartdate=datetime.datetime(2016,9,1)
 
 
 RESET=0
