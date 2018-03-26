@@ -18,7 +18,7 @@ currentseasonstartdate=datetime.datetime(2016,9,1)
 
 RESET=0
 SIGMA_CUTOFF=5.0
-DB_FILENAME="hitz.sqlite"
+DB_FILENAME="db/hitz.sqlite"
 
 Base = declarative_base()
 
