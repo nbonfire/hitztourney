@@ -1,7 +1,7 @@
 hitztourney
 ===========
 
-to use with docker, build the docker file with 
+to use with docker, download and build the docker file with 
 `docker build --no-cache -t hitztourney:latest .`
 
 then run with 
