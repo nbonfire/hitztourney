@@ -252,7 +252,7 @@ class SAEnginePlugin(plugins.SimplePlugin):
 		self.bus.subscribe("bind", self.bind)
  
 	def start(self):
-		db_path = os.path.abspath(os.path.join(os.curdir, 'hitz.sqlite'))
+		db_path = os.path.abspath(os.path.join(os.curdir, 'db/hitz.sqlite'))
 		self.sa_engine = create_engine('sqlite:///%s' % db_path, echo=False)
 		Base.metadata.create_all(self.sa_engine)
  
