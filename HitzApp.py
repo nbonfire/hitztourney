@@ -459,6 +459,10 @@ class HitzApp(object):
 	@cherrypy.expose
 	def ws(self):
 		handler = cherrypy.request.ws_handler
+	@cherrypy.expose
+	def populate(self):
+		jsonrestore()
+		print "restored from backup"
 
 if __name__ == '__main__':
 	
