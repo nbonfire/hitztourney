@@ -1,7 +1,7 @@
 hitztourney
 ===========
 
-NOTE: there is no index on purpose. go to http://yourhostname.whatever/games to see the main page. Yes, I know this is security by obscurity but I really only need to stop drunk gamers from padding their stats. I do this more complete in the flask/heroku-based version at nbonfire/hitzapp
+NOTE: there is no index on purpose. go to http://yourhostname.whatever/games to see the main page. Yes, I know this is security by obscurity but I really only need to stop drunk gamers from padding their stats. I do a better job with security in the flask/heroku-based version at nbonfire/hitzapp by implementing social login.
 
 
 to use with docker, download and build the docker file with 
