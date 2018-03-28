@@ -1,6 +1,9 @@
 hitztourney
 ===========
 
+NOTE: there is no index on purpose. go to http://<yourhostname>/games to see the main page. Yes, I know this is security by obscurity but I really only need to stop drunk gamers from padding their stats.
+
+
 to use with docker, download and build the docker file with 
 `docker build --no-cache -t hitztourney:latest .`
 
