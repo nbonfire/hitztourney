@@ -1,0 +1,13 @@
+version: '2'
+
+services:
+  hitztourney:
+    image: nickdanger3d/hitztourney
+    container_name: hitztourney
+    ports:
+      - 4011:4011
+    volumes: 
+      - ~/hitztourney/hitztourney/db:/db
+      - ~/hitztourney/hitztoruney/gamesbackup.txt:/gamesbackup.txt
+    restart: always
+    
